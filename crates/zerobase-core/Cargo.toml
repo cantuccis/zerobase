@@ -1,0 +1,31 @@
+[package]
+name = "zerobase-core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+rusqlite = { workspace = true }
+r2d2 = { workspace = true }
+config = { workspace = true }
+secrecy = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+nanoid = { workspace = true }
+regex = "1"
+jsonschema = { workspace = true }
+ammonia = { workspace = true }
+async-trait = { workspace = true }
+hmac = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+reqwest = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"
+serial_test = "3"

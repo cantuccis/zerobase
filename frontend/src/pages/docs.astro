@@ -1,0 +1,8 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import { ApiDocsPage } from '../components/pages/ApiDocsPage';
+---
+
+<DashboardLayout title="API Documentation">
+  <ApiDocsPage client:load />
+</DashboardLayout>

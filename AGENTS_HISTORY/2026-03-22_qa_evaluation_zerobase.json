@@ -1,0 +1,24 @@
+{
+  "decision": "needs_fixes",
+  "reason": "All 7 QA tasks completed successfully and the project demonstrates strong overall quality (B+ grade, 2700+ Rust tests, 1004 frontend tests, PocketBase API compatibility verified, comprehensive security tests). However, three issues must be addressed before approval: (1) Silent cascade errors in record_service.rs where `let _ =` discards Results from cascade delete/update operations, risking silent data integrity violations. (2) Relation expansion security gap — the expand service performs zero view_rule checks on target collections, meaning users can leak data from collections they lack access to by using ?expand= on relations. (3) The sanitize_table_name function uses panic!/assert! instead of returning Result, which is a defense-in-depth concern even though inputs are validated upstream. These are real bugs and security issues that must be fixed before the project can be approved.",
+  "new_tasks": [
+    {
+      "title": "Fix silent cascade delete/update error handling in record_service.rs",
+      "description": "In crates/zerobase-core/src/services/record_service.rs, lines 1164 and 1194 use `let _ =` to discard Result values from cascade delete and cascade set-null operations. If a cascade delete or update fails silently, the parent record is deleted but referencing records are left in an inconsistent state (orphaned references or stale foreign keys). Fix: propagate these errors by replacing `let _ =` with proper `?` operator or collect errors and return them. Add integration tests that verify cascade failures roll back the entire operation (or at minimum surface the error). Reference: QA Task 1 (Code Quality Review) finding on silent cascade errors.",
+      "phase": 0,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Add view_rule access checks to relation expansion service",
+      "description": "In crates/zerobase-core/src/services/expand.rs, the expand_record/expand_records functions fetch related records from target collections without checking whether the requesting user has view_rule access to those collections. This is a security vulnerability: a user can use ?expand=relationField to read records from collections they are not authorized to view. Fix: before returning expanded records, evaluate the target collection's view_rule against the current auth context. If the rule denies access, either omit the expanded field or return it as null. Add integration tests that verify: (a) expanding a relation to a collection with a restrictive view_rule returns null/empty for unauthorized users, (b) superusers can still expand all relations, (c) expanding works normally when view_rule allows access. Reference: QA Task 6 finding on relation expansion data leak.",
+      "phase": 0,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Replace panic!/assert! with Result in sanitize_table_name",
+      "description": "In crates/zerobase-db/src/record_repo.rs, the sanitize_table_name function (lines 423-438) uses assert! macros that will panic and crash the server if an invalid table name somehow reaches this point. While inputs are validated at the schema layer, defense-in-depth requires this function to return a Result<&str, DbError> instead of panicking. This prevents a single malformed collection name from taking down the entire server. Fix: change the function signature to return Result, replace assert! with proper error returns, and update all callers to propagate the error. Add a unit test that verifies invalid table names produce an error rather than a panic. Reference: QA Task 1 (Code Quality Review) finding on assertions in production paths.",
+      "phase": 0,
+      "required_role": "dev_backend"
+    }
+  ]
+}

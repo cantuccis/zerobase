@@ -1,0 +1,22 @@
+services:
+  zerobase-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./zerobase_data:/app/zerobase_data
+    environment:
+      - ZEROBASE__SERVER__HOST=0.0.0.0
+      - ZEROBASE__SERVER__PORT=8090
+      - ZEROBASE__SERVER__LOG_FORMAT=pretty
+      - ZEROBASE__AUTH__TOKEN_SECRET=dev-only-change-me-in-production-use-openssl-rand-hex-32
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8090/api/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 3s

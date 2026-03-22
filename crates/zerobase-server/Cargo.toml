@@ -1,0 +1,42 @@
+[package]
+name = "zerobase-server"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "zerobase"
+path = "src/lib.rs"
+
+[[bin]]
+name = "zerobase"
+path = "src/main.rs"
+
+[dependencies]
+zerobase-core = { workspace = true }
+zerobase-db = { workspace = true }
+zerobase-auth = { workspace = true }
+zerobase-api = { workspace = true }
+zerobase-files = { workspace = true }
+zerobase-admin = { workspace = true }
+zerobase-hooks = { workspace = true }
+axum = { workspace = true }
+tokio = { workspace = true }
+boa_engine = { version = "0.20", features = ["annex-b"] }
+parking_lot = "0.12"
+tower = { workspace = true }
+tower-http = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+clap = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
+
+[[example]]
+name = "framework_mode"
+
+[dev-dependencies]
+tower = { workspace = true }
+tempfile = "3"
+reqwest = { workspace = true, features = ["json", "blocking"] }
+libc = "0.2"

@@ -1,0 +1,35 @@
+{
+  "tasks": [
+    {
+      "title": "PocketBase API Compatibility Validation",
+      "description": "Verify that Zerobase API responses match PocketBase's JSON format exactly for all endpoints. Compare response shapes (field names, nesting, pagination metadata, error format) against PocketBase documentation and a running PocketBase instance. Check: (1) Record responses include id, collectionId, collectionName, created, updated. (2) List responses include page, perPage, totalPages, totalItems, items[]. (3) Error responses use {code, message, data} format. (4) Auth token response structure matches. (5) Filter syntax compatibility (?filter=, ?sort=, ?expand=, ?fields=). This is critical since the project goal is to be a drop-in Rust replacement for PocketBase.",
+      "phase": 0,
+      "required_role": "qa_use_cases"
+    },
+    {
+      "title": "Auth Flow Security and Edge Case Testing",
+      "description": "Test the full authentication system for security edge cases across all auth methods (password, OTP, OAuth2, MFA, passkeys). Specific checks: (1) Token invalidation: verify changing password/tokenKey invalidates all existing JWTs. (2) OTP brute-force: confirm max attempts limit and code expiry after 5 minutes. (3) OAuth2 state parameter: verify CSRF protection in OAuth2 flow, reject replayed/tampered state. (4) MFA bypass: ensure partial tokens cannot access protected resources. (5) Race conditions: concurrent password reset requests, simultaneous OTP verifications. (6) Timing attacks: password comparison and token validation use constant-time comparison. (7) Rate limiting on auth endpoints specifically (login, OTP request, password reset).",
+      "phase": 0,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "SQLite Concurrent Access and Data Integrity Under Load",
+      "description": "Test SQLite-specific concurrency and data integrity scenarios since Zerobase uses an embedded single-file database. Verify: (1) WAL mode handles concurrent reads during writes without blocking. (2) Schema alteration (table rebuild for column removal) doesn't corrupt data or lose records. (3) Connection pool exhaustion under high concurrent load returns proper errors, not deadlocks. (4) Transaction isolation: batch operations are truly atomic (all-or-nothing). (5) FTS5 index consistency after rapid create/update/delete cycles. (6) Database backup while writes are in-flight produces a consistent snapshot. (7) Large dataset performance: pagination with 100k+ records, filtering on non-indexed fields. These are critical because SQLite has unique concurrency constraints compared to client-server databases.",
+      "phase": 0,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Access Rules Engine Cross-Cutting Verification",
+      "description": "Test the access rules system as a cross-cutting concern across all API surfaces (REST, realtime SSE, file access). Specific scenarios: (1) Null rule (superuser-only) blocks authenticated non-superusers on all endpoints. (2) Rules referencing @request.auth.* correctly resolve after token refresh. (3) List rules act as filters — verify that record count in pagination metadata reflects filtered results, not total. (4) Realtime SSE events are filtered per-client access rules (client A shouldn't see events for records they can't view). (5) Protected file access tokens respect the view_rule of the parent collection. (6) Relation expansion doesn't leak data from collections the user lacks view_rule access to. (7) manage_rule correctly overrides individual CRUD rules. (8) Rule syntax errors return actionable error messages at save time, not runtime.",
+      "phase": 0,
+      "required_role": "qa_use_cases"
+    },
+    {
+      "title": "Admin Dashboard Cross-Browser and Responsive UI Validation",
+      "description": "Validate the AstroJS admin dashboard across browsers and screen sizes for usability and correctness. Checks: (1) Schema editor: drag-and-drop field reordering works on Chrome, Firefox, Safari. (2) Dynamic record form renders all field types correctly (especially rich text Editor, relation picker, file upload drag-drop). (3) Responsive layout: sidebar collapses on mobile, record table is scrollable, modals don't overflow on small screens. (4) Dark mode: all components (toasts, modals, form inputs, charts in logs viewer) render correctly without contrast issues. (5) Collection delete confirmation modal: typing collection name works with IME input methods. (6) Real-time log viewer doesn't cause memory leaks on long sessions. (7) File upload component shows correct progress and handles network interruption gracefully.",
+      "phase": 0,
+      "required_role": "ui_ux"
+    }
+  ],
+  "summary": "Five project-specific QA tasks targeting the unique aspects of Zerobase: PocketBase API format compatibility (critical for drop-in replacement goal), auth security edge cases across all 5+ auth methods, SQLite-specific concurrency and data integrity concerns, access rules cross-cutting enforcement across REST/SSE/files, and admin dashboard cross-browser/responsive validation."
+}

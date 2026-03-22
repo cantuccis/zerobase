@@ -1,0 +1,17 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="New Collection | Zerobase">
+  <div id="collection-editor-root" data-mode="create"></div>
+</Layout>
+
+<script>
+  import { createElement } from 'react';
+  import { createRoot } from 'react-dom/client';
+  import { CollectionEditorPage } from '../../components/pages/CollectionEditorPage';
+
+  const container = document.getElementById('collection-editor-root')!;
+  const root = createRoot(container);
+  root.render(createElement(CollectionEditorPage, { mode: 'create' }));
+</script>

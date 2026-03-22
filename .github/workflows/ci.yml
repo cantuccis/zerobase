@@ -1,0 +1,164 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-Dwarnings"
+
+jobs:
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: cargo fmt --all --check
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --workspace
+
+  build:
+    name: Build (release)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --workspace --release
+
+  smoke-test:
+    name: Smoke test (binary starts & serves dashboard)
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --release --package zerobase-server
+      - name: Run smoke test
+        run: cargo test --release --package zerobase-server --test smoke_test
+        timeout-minutes: 5
+
+  # ── Cross-compilation matrix (runs on main branch and tags) ──────────
+  cross-build:
+    name: Cross-build (${{ matrix.target }})
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            use-cross: true
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-pc-windows-gnu
+            os: ubuntu-latest
+            use-cross: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Install cross
+        if: matrix.use-cross
+        run: cargo install cross --locked
+
+      - name: Build (cross)
+        if: matrix.use-cross
+        run: cross build --release --target ${{ matrix.target }} --package zerobase-server
+
+      - name: Build (cargo)
+        if: "!matrix.use-cross"
+        run: cargo build --release --target ${{ matrix.target }} --package zerobase-server
+
+      - name: Determine binary name
+        id: bin
+        run: |
+          if [[ "${{ matrix.target }}" == *windows* ]]; then
+            echo "name=zerobase.exe" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=zerobase" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zerobase-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/${{ steps.bin.outputs.name }}
+          if-no-files-found: error
+
+  # ── Release job (only on tags) ───────────────────────────────────────
+  release:
+    name: Create release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test, cross-build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Package archives
+        run: |
+          mkdir -p dist
+          VERSION="${GITHUB_REF_NAME}"
+
+          for dir in artifacts/zerobase-*/; do
+            target="$(basename "$dir" | sed 's/^zerobase-//')"
+            archive="zerobase-${VERSION}-${target}"
+
+            if [[ "$target" == *windows* ]]; then
+              (cd "$dir" && zip "../../dist/${archive}.zip" zerobase.exe)
+            else
+              chmod +x "$dir/zerobase"
+              (cd "$dir" && tar -czf "../../dist/${archive}.tar.gz" zerobase)
+            fi
+          done
+
+          cd dist
+          sha256sum * > checksums-sha256.txt
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true

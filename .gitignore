@@ -1,0 +1,39 @@
+# Rust
+/target/
+e2e-file-share-test/target/
+
+# Frontend (Astro / Node)
+node_modules/
+frontend/dist/
+frontend/.astro/
+frontend/test-results/
+frontend/playwright-report/
+frontend/e2e/.auth/
+
+# SQLite runtime data
+data/
+zerobase_data/
+e2e-file-share-test/zerobase_data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Compiled binaries
+e2e-file-share-test/zerobase
+
+# Environment
+.env
+.env.*
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/

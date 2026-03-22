@@ -1,0 +1,869 @@
+{
+  "summary": "Comprehensive implementation plan for Zerobase — a Rust-based Backend-as-a-Service (BaaS) tool replicating PocketBase's feature set. The plan spans 12 phases: (1) Project scaffolding & CI, (2) SQLite database layer, (3) Schema/collections system, (4) Auto-generated REST API with CRUD, (5) Access rules & row-level permissions, (6) Authentication (password, OTP, OAuth2, MFA, passkeys, superadmin), (7) File storage (local + S3), (8) Relations system, (9) Realtime subscriptions via SSE, (10) Admin dashboard frontend in AstroJS, (11) Extensibility/hooks system, (12) Integration testing, packaging & deployment. Every component follows TDD, uses axum, and is designed for extensibility. Total: 130+ tasks.",
+  "tasks": [
+    {
+      "title": "Define project architecture and module layout",
+      "description": "Create a high-level architecture document defining the module structure, crate organization (workspace vs single crate), layered architecture (domain, application, infrastructure, API), error handling strategy, and configuration approach. Follow 'Zero to Production in Rust' patterns. Acceptance criteria: Architecture doc exists at docs/architecture.md covering all layers, module boundaries, and key design decisions.",
+      "phase": 1,
+      "required_role": "planner"
+    },
+    {
+      "title": "Initialize Rust workspace with Cargo.toml",
+      "description": "Create the Rust workspace with sub-crates: zerobase-core (domain + application logic), zerobase-db (SQLite layer), zerobase-api (axum HTTP layer), zerobase (binary crate). Set up Cargo workspace with shared dependencies. Include rust-toolchain.toml pinning stable. Acceptance criteria: `cargo check` passes on empty workspace with all crates linked.",
+      "phase": 1,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Set up CI pipeline with GitHub Actions",
+      "description": "Create .github/workflows/ci.yml with: cargo fmt --check, cargo clippy -- -D warnings, cargo test, cargo build --release. Cache cargo registry and target directory. Acceptance criteria: CI runs on push/PR and all steps pass on the empty project.",
+      "phase": 1,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Configure project-wide error handling with thiserror",
+      "description": "Define a unified error type hierarchy in zerobase-core using thiserror. Create ZerobaseError enum with variants for Database, Validation, Auth, NotFound, Forbidden, Internal. Implement From conversions and HTTP status code mapping. Write unit tests for error conversions. Acceptance criteria: Error types compile, all variants map to correct HTTP status codes, tests pass.",
+      "phase": 1,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Set up configuration management with config crate",
+      "description": "Implement configuration loading using the `config` crate. Support: default values, environment variables, config file (zerobase.toml). Config struct covers: server (host, port), database (path), storage (local path, S3 settings), auth (token secret, token duration), smtp settings. Write tests for config loading from env vars. Acceptance criteria: Config loads from env and file, tests verify all fields, missing required fields produce clear errors.",
+      "phase": 1,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Set up structured logging with tracing",
+      "description": "Integrate tracing and tracing-subscriber crates. Configure JSON and pretty-print formatters based on environment. Add request-id propagation middleware for axum. Write integration test verifying log output format. Acceptance criteria: Logs are structured JSON in production mode, pretty in dev, request IDs propagate through handlers.",
+      "phase": 1,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Create basic axum server with health check endpoint",
+      "description": "Set up axum application with graceful shutdown, CORS middleware, and a GET /api/health endpoint returning {status: 'ok'}. Use tower layers for request tracing. Write integration test hitting the health endpoint. Acceptance criteria: Server starts, health endpoint returns 200, integration test passes, graceful shutdown works.",
+      "phase": 1,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Set up test infrastructure and helpers",
+      "description": "Create test utilities module: TestApp struct that spins up server on random port with in-memory SQLite, HTTP client helpers (get, post, put, delete, patch), assertion helpers, test fixtures. Acceptance criteria: TestApp can be created in tests, HTTP helpers work, example test using TestApp passes.",
+      "phase": 1,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Design SQLite database abstraction layer",
+      "description": "Design the database abstraction: connection pool using r2d2 or deadpool-sqlite, migration system using refinery or custom, transaction support, query builder abstraction. Document the design in a brief ADR. Acceptance criteria: ADR exists explaining choices, interface traits defined for DB operations.",
+      "phase": 2,
+      "required_role": "planner"
+    },
+    {
+      "title": "Implement SQLite connection pool",
+      "description": "Implement connection pool for SQLite using rusqlite + r2d2 (or deadpool). Support both file-based and in-memory databases. Configure WAL mode, busy timeout, foreign keys. Write tests verifying pool behavior, concurrent access, and WAL mode. Acceptance criteria: Pool creates connections, concurrent reads work, WAL mode enabled, tests pass.",
+      "phase": 2,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement database migration system",
+      "description": "Build a migration system that tracks applied migrations in a _migrations table. Migrations are Rust functions (not SQL files) for type safety. Support up migrations. Include initial migration creating system tables (_migrations, _collections, _fields, _settings, _superusers). Write tests for migration ordering and idempotency. Acceptance criteria: Migrations run in order, are tracked, system tables created, re-running is idempotent, tests pass.",
+      "phase": 2,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement system tables schema",
+      "description": "Create the core system tables via migration: _collections (id, name, type, schema, list_rule, view_rule, create_rule, update_rule, delete_rule, created, updated), _fields (id, collection_id, name, type, required, unique, options JSON), _superusers (id, email, password_hash, created, updated), _settings (key, value JSON). Write tests verifying table structure. Acceptance criteria: All system tables created with correct columns, constraints, and indexes. Tests verify schema.",
+      "phase": 2,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Design collection and field type system",
+      "description": "Design the Rust type system for collections and fields. Define enums: CollectionType (Base, Auth, View), FieldType (Text, Number, Bool, Email, URL, DateTime, Select, MultiSelect, File, Relation, JSON, Editor). Define CollectionSchema, FieldSchema structs with validation. Document field options per type (min, max, pattern, values, etc.). Acceptance criteria: All types defined with serde Serialize/Deserialize, validation methods, comprehensive unit tests for each field type validation.",
+      "phase": 3,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement collection CRUD in core layer",
+      "description": "Implement CollectionService with methods: create_collection, get_collection, list_collections, update_collection, delete_collection. Each method validates input, manages the _collections and _fields tables, and creates/alters/drops the corresponding SQLite table. Write unit tests with mock DB. Acceptance criteria: All CRUD operations work, validation rejects invalid schemas, cascading delete removes fields, tests pass.",
+      "phase": 3,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement dynamic SQLite table creation from collection schema",
+      "description": "When a collection is created, dynamically generate and execute CREATE TABLE SQL based on field definitions. Map FieldType to SQLite column types (Text->TEXT, Number->REAL, Bool->INTEGER, DateTime->TEXT ISO8601, etc.). Include id (TEXT PK, CUID or nanoid), created (TEXT), updated (TEXT) auto-columns. Write tests verifying table creation for various schemas. Acceptance criteria: Tables are created with correct column types, default columns present, indexes on id/created, tests pass.",
+      "phase": 3,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement schema alteration (add/remove/modify fields)",
+      "description": "Support altering collection schemas: adding new columns (ALTER TABLE ADD COLUMN), removing columns (SQLite requires table rebuild), renaming columns, changing field options. Handle data migration for type changes. Write extensive tests for all alteration scenarios including edge cases. Acceptance criteria: Fields can be added, removed, renamed. Data is preserved during alterations. Tests cover all scenarios including type changes.",
+      "phase": 3,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement field validation engine",
+      "description": "Build a validation engine that validates record data against collection field definitions. Validate: required fields present, type correctness, min/max for numbers, min/max length for strings, regex patterns, select values in allowed list, email format, URL format. Return structured validation errors. Write extensive unit tests per field type. Acceptance criteria: All field types validated correctly, clear error messages, tests cover valid and invalid inputs for every field type.",
+      "phase": 3,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement ID generation strategy",
+      "description": "Implement a unique ID generation strategy for records. Use a 15-character alphanumeric ID (matching PocketBase's format) using nanoid or custom implementation. Ensure uniqueness guarantees. Write tests for ID format, uniqueness across many generations. Acceptance criteria: IDs are 15 chars alphanumeric, collision probability is negligible, generation is fast, tests pass.",
+      "phase": 3,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement record CRUD operations in core layer",
+      "description": "Build RecordService with: create_record, get_record, list_records, update_record, delete_record. Each operates on dynamic tables based on collection schema. Records are represented as serde_json::Value maps. Validate against schema before writes. Auto-set created/updated timestamps. Write integration tests against real SQLite. Acceptance criteria: All CRUD operations work on dynamic tables, validation enforced, timestamps auto-managed, tests pass.",
+      "phase": 4,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement filtering engine for record queries",
+      "description": "Build a filter parser and SQL generator. Support PocketBase filter syntax: field = value, field != value, field > value, field ~ 'pattern' (LIKE), field ?= value (contains for multi-value), logical operators (&&, ||), parentheses grouping. Parse filter string into AST, then generate parameterized SQL WHERE clause. Write tests for all operators and combinations. Acceptance criteria: All filter operators work, SQL injection prevented via parameterization, complex nested filters work, tests pass.",
+      "phase": 4,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement sorting for record queries",
+      "description": "Support sort parameter: comma-separated field names, prefix - for descending. Validate that sort fields exist in collection schema. Generate ORDER BY clause. Write tests for single and multi-field sorting. Acceptance criteria: Sorting works ascending/descending, multi-field sort works, invalid fields rejected, tests pass.",
+      "phase": 4,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement pagination for record queries",
+      "description": "Support page and perPage parameters. Default perPage=30, max perPage=500. Return pagination metadata: page, perPage, totalPages, totalItems. Use COUNT(*) for total, LIMIT/OFFSET for paging. Write tests for pagination edge cases. Acceptance criteria: Pagination works correctly, metadata accurate, edge cases (empty results, last page) handled, tests pass.",
+      "phase": 4,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement partial field selection",
+      "description": "Support a `fields` query parameter to return only specified fields in response. Parse comma-separated field names, validate against schema, project in SQL SELECT. Write tests. Acceptance criteria: Only requested fields returned, invalid fields rejected or ignored gracefully, id always included, tests pass.",
+      "phase": 4,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Create REST API routes for collections management",
+      "description": "Implement axum routes: GET /api/collections (list), POST /api/collections (create), GET /api/collections/:id (view), PATCH /api/collections/:id (update), DELETE /api/collections/:id (delete). Wire to CollectionService. Return proper HTTP status codes. Require superuser auth (placeholder middleware). Write integration tests. Acceptance criteria: All endpoints work, proper status codes (200, 201, 400, 404), JSON responses match PocketBase format, tests pass.",
+      "phase": 4,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Create REST API routes for record CRUD",
+      "description": "Implement axum routes: GET /api/collections/:collection/records (list with filter/sort/page), POST /api/collections/:collection/records (create), GET /api/collections/:collection/records/:id (view), PATCH /api/collections/:collection/records/:id (update), DELETE /api/collections/:collection/records/:id (delete). Wire to RecordService. Write integration tests for all endpoints including filtering and pagination. Acceptance criteria: All CRUD endpoints work, filtering/sorting/pagination via query params, proper error responses, tests pass.",
+      "phase": 4,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement request/response serialization matching PocketBase format",
+      "description": "Ensure all API responses match PocketBase JSON format: records have id, collectionId, collectionName, created, updated plus data fields. List responses have page, perPage, totalPages, totalItems, items[]. Error responses have code, message, data (field errors). Write tests comparing output format to PocketBase examples. Acceptance criteria: Response format matches PocketBase spec exactly, error format consistent, tests verify format.",
+      "phase": 4,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Design access rules system",
+      "description": "Design the rule evaluation engine. Rules are filter-like expressions that can reference @request.auth.id, @request.auth.collectionName, @request.data.*, @collection.fieldName. Rules return boolean (allow/deny) and also act as additional filters on list queries. Document the design with examples for common patterns. Acceptance criteria: Design doc covers rule syntax, evaluation context, filter integration, and example rules for common scenarios.",
+      "phase": 5,
+      "required_role": "planner"
+    },
+    {
+      "title": "Implement rule expression parser",
+      "description": "Build a parser for access rule expressions. Support: field comparisons, @request.auth.* context variables, @request.data.* for incoming data, @collection.* for related collection lookups, logical operators (&&, ||, !), string matching (~). Parse into an AST. Write tests for all expression types. Acceptance criteria: Parser handles all PocketBase rule syntax, produces correct AST, error messages for invalid syntax, tests pass.",
+      "phase": 5,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement rule evaluation engine",
+      "description": "Build the engine that evaluates parsed rule ASTs against a request context (authenticated user, request data, target record). For list operations, convert rules to SQL WHERE clauses that act as additional filters. For single-record operations, evaluate rule as boolean. Write extensive tests with various rule combinations. Acceptance criteria: Rules correctly allow/deny access, list rules filter results, context variables resolve correctly, tests pass.",
+      "phase": 5,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Integrate access rules into record API endpoints",
+      "description": "Apply collection rules (list_rule, view_rule, create_rule, update_rule, delete_rule) to corresponding record API endpoints. Null rule = superuser only. Empty string = public access. Non-empty = evaluate expression. Write integration tests verifying rule enforcement for each operation. Acceptance criteria: Rules enforced on all endpoints, null rules block non-superusers, empty rules allow all, expression rules filter correctly, tests pass.",
+      "phase": 5,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement manage rule for collection admin access",
+      "description": "Implement the manage_rule on collections that grants full CRUD access to records matching the rule, bypassing individual operation rules. This allows delegated administration. Write tests. Acceptance criteria: Users matching manage_rule can perform all operations, manage_rule overrides individual rules, tests pass.",
+      "phase": 5,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Design authentication system architecture",
+      "description": "Design the extensible auth architecture. Define traits: AuthProvider (authenticate, verify), TokenService (generate, validate, refresh). Plan the auth collection type (special collection with email, password, verified, etc. fields). Design JWT token structure (claims, expiry). Plan for extensibility to add new auth methods/providers. Acceptance criteria: Architecture doc covers all auth flows, trait definitions, token structure, and extensibility points.",
+      "phase": 6,
+      "required_role": "planner"
+    },
+    {
+      "title": "Implement auth collection type",
+      "description": "Extend the collection system with an 'auth' collection type. Auth collections automatically include fields: email (unique), emailVisibility, password (hashed, never returned), verified, tokenKey (for invalidation). When creating an auth collection, auto-add these fields. Write tests. Acceptance criteria: Auth collections have all required fields, password is hashed (argon2), email uniqueness enforced, tests pass.",
+      "phase": 6,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement password hashing with argon2",
+      "description": "Implement password hashing using the argon2 crate with secure defaults. Functions: hash_password(plain) -> hash, verify_password(plain, hash) -> bool. Configure memory, iterations, parallelism per OWASP recommendations. Write tests including timing consistency. Acceptance criteria: Passwords hashed with argon2id, verification works, parameters are secure, tests pass.",
+      "phase": 6,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement JWT token service",
+      "description": "Build JWT token generation and validation using jsonwebtoken crate. Tokens include: user id, collection id, type (auth/refresh/file), tokenKey claim for invalidation. Support configurable expiry. Implement token refresh flow. Write tests for generation, validation, expiry, and invalidation. Acceptance criteria: JWTs generated and validated correctly, expired tokens rejected, tokenKey change invalidates tokens, refresh works, tests pass.",
+      "phase": 6,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement email/password authentication endpoints",
+      "description": "Create endpoints: POST /api/collections/:collection/auth-with-password (login), POST /api/collections/:collection/records (register via record creation). Login returns token + user record. Handle invalid credentials, unverified accounts. Write integration tests. Acceptance criteria: Login returns JWT + record, invalid creds return 400, registration creates auth record, tests pass.",
+      "phase": 6,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement auth middleware for axum",
+      "description": "Create axum middleware/extractor that: reads Authorization header (Bearer token), validates JWT, loads user record, makes auth context available to handlers. Support optional auth (for public endpoints with auth-aware rules). Write tests for authenticated and unauthenticated requests. Acceptance criteria: Auth extractor works in handlers, invalid tokens return 401, optional auth allows unauthenticated access, tests pass.",
+      "phase": 6,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement superuser/admin system",
+      "description": "Implement superuser management: store superusers in _superusers table, POST /_/api/admins/auth-with-password for admin login, admin tokens have special claims. Superusers bypass all access rules. Initial superuser created on first run or via CLI. Write tests. Acceptance criteria: Superusers can authenticate, superuser tokens bypass rules, first-run setup creates initial superuser, tests pass.",
+      "phase": 6,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement token refresh endpoint",
+      "description": "Create POST /api/collections/:collection/auth-refresh endpoint. Accept valid (non-expired) auth token, return new token with extended expiry. Validate tokenKey hasn't changed. Write tests. Acceptance criteria: Refresh returns new valid token, expired tokens cannot be refreshed, changed tokenKey invalidates refresh, tests pass.",
+      "phase": 6,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement email verification flow",
+      "description": "Create endpoints: POST /api/collections/:collection/request-verification (send verification email), POST /api/collections/:collection/confirm-verification (verify token from email). Generate time-limited verification tokens. Integrate with SMTP for sending emails (use lettre crate). Write tests with mock SMTP. Acceptance criteria: Verification email sent, token validates correctly, user marked as verified, expired tokens rejected, tests pass.",
+      "phase": 6,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement password reset flow",
+      "description": "Create endpoints: POST /api/collections/:collection/request-password-reset (send reset email), POST /api/collections/:collection/confirm-password-reset (set new password with token). Generate time-limited reset tokens. Invalidate existing auth tokens on password change. Write tests. Acceptance criteria: Reset email sent, token works once, password updated, old tokens invalidated, tests pass.",
+      "phase": 6,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement email change flow",
+      "description": "Create endpoints: POST /api/collections/:collection/request-email-change, POST /api/collections/:collection/confirm-email-change. Send confirmation to new email. Validate new email uniqueness. Write tests. Acceptance criteria: Email change requires confirmation, uniqueness enforced, old tokens invalidated after change, tests pass.",
+      "phase": 6,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement OTP authentication via email",
+      "description": "Create endpoints: POST /api/collections/:collection/request-otp (send OTP code to email), POST /api/collections/:collection/auth-with-otp (verify code and return token). Generate 6-digit codes with 5-minute expiry. Store OTP in temporary table with attempts limit. Write tests. Acceptance criteria: OTP sent via email, valid code returns auth token, expired/used codes rejected, max attempts enforced, tests pass.",
+      "phase": 6,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Design OAuth2 provider abstraction",
+      "description": "Design trait-based OAuth2 provider system. Define OAuthProvider trait with methods: auth_url(), exchange_code(), get_user_info(). Define OAuthUserInfo struct. Plan provider registration system where new providers can be added by implementing the trait. Acceptance criteria: Trait defined, supports authorization code flow, provider factory pattern documented.",
+      "phase": 6,
+      "required_role": "planner"
+    },
+    {
+      "title": "Implement OAuth2 core flow",
+      "description": "Implement the OAuth2 authorization code flow: GET /api/collections/:collection/auth-methods (list enabled providers), GET /api/collections/:collection/auth-with-oauth2 redirect, callback handling, code exchange, user info retrieval, account linking/creation. Store OAuth2 state in _externalAuths table. Use oauth2 crate. Write tests with mocked providers. Acceptance criteria: Full OAuth2 flow works, accounts linked correctly, duplicate email handling, tests pass.",
+      "phase": 6,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement Google OAuth2 provider",
+      "description": "Implement GoogleProvider implementing OAuthProvider trait. Configure Google-specific endpoints, scopes (email, profile), and user info parsing. Support Google ID token validation as optimization. Write tests with mocked Google responses. Acceptance criteria: Google login works end-to-end, user info extracted correctly (email, name, avatar), tests pass.",
+      "phase": 6,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement Microsoft OAuth2 provider",
+      "description": "Implement MicrosoftProvider implementing OAuthProvider trait. Configure Microsoft-specific endpoints (Azure AD v2), scopes, and user info parsing from Microsoft Graph API. Write tests. Acceptance criteria: Microsoft login works, user info extracted, account linking works, tests pass.",
+      "phase": 6,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement MFA (Multi-Factor Authentication) support",
+      "description": "Add MFA support: TOTP-based (using totp-rs crate). Endpoints: POST /api/collections/:collection/records/:id/request-mfa-setup (return QR code/secret), POST /api/collections/:collection/records/:id/confirm-mfa (verify code and enable). Modify auth flow to return partial token requiring MFA verification when MFA is enabled. POST /api/collections/:collection/auth-with-mfa (verify TOTP and return full token). Write tests. Acceptance criteria: TOTP setup works, MFA enforced on login when enabled, recovery codes generated, tests pass.",
+      "phase": 6,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement Passkey/WebAuthn authentication",
+      "description": "Add WebAuthn/Passkey support using webauthn-rs crate. Endpoints: POST /api/collections/:collection/request-passkey-register (return challenge), POST /api/collections/:collection/confirm-passkey-register (store credential), POST /api/collections/:collection/auth-with-passkey-begin (return assertion challenge), POST /api/collections/:collection/auth-with-passkey-finish (verify and return token). Store credentials in _webauthn_credentials table. Write tests. Acceptance criteria: Passkey registration and authentication work, multiple passkeys per user supported, tests pass.",
+      "phase": 6,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement auth settings management",
+      "description": "Create settings API for auth configuration: enable/disable auth methods per collection, configure OAuth2 provider credentials, set token duration, configure MFA policy. Store in _settings table. Admin-only endpoints. Write tests. Acceptance criteria: Auth methods can be toggled, provider credentials stored securely, settings persist, tests pass.",
+      "phase": 6,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Design file storage abstraction",
+      "description": "Design trait-based storage system. Define StorageBackend trait with methods: upload(key, data), download(key), delete(key), exists(key), generate_url(key). Plan implementations for local filesystem and S3-compatible storage. Design file metadata storage in records. Acceptance criteria: Trait defined, local and S3 variants planned, file attachment to records designed.",
+      "phase": 7,
+      "required_role": "planner"
+    },
+    {
+      "title": "Implement local filesystem storage backend",
+      "description": "Implement LocalStorage implementing StorageBackend trait. Store files in configurable directory organized as: storage/{collectionId}/{recordId}/{filename}. Handle file naming conflicts with suffixes. Support streaming uploads/downloads. Write tests. Acceptance criteria: Files uploaded, downloaded, deleted correctly, directory structure maintained, concurrent access safe, tests pass.",
+      "phase": 7,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement S3-compatible storage backend",
+      "description": "Implement S3Storage implementing StorageBackend trait using aws-sdk-s3 or rust-s3 crate. Support configurable endpoint (for MinIO/Backblaze/etc.), bucket, region, credentials. Write tests using mock S3 or testcontainers. Acceptance criteria: Files upload/download/delete via S3 API, custom endpoints work, tests pass.",
+      "phase": 7,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement file upload in record creation/update",
+      "description": "Extend record create/update endpoints to handle multipart form data with file uploads. For File-type fields: validate file size limits, MIME type restrictions per field options, store via StorageBackend, save filename in record. Support multiple files per field. Write integration tests. Acceptance criteria: Files upload with records, validation enforced, filenames stored, old files cleaned on update, tests pass.",
+      "phase": 7,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement file download and serving endpoints",
+      "description": "Create endpoint: GET /api/files/:collectionId/:recordId/:filename. Serve files with correct Content-Type headers. Support protected files (require valid file token). Implement GET /api/files/token endpoint to generate short-lived file access tokens. Write tests. Acceptance criteria: Public files served directly, protected files require valid token, correct MIME types, tests pass.",
+      "phase": 7,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement image thumbnail generation",
+      "description": "For image file fields, support on-the-fly thumbnail generation via query params: ?thumb=100x100, ?thumb=200x0 (auto height). Use image crate for resizing. Cache thumbnails in storage. Write tests. Acceptance criteria: Thumbnails generated at requested sizes, cached for subsequent requests, non-image files return 400, tests pass.",
+      "phase": 7,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement file cleanup on record deletion",
+      "description": "When a record with file fields is deleted, clean up all associated files from storage. Handle both immediate deletion and failed deletions gracefully (log and continue). Write tests. Acceptance criteria: Files removed when record deleted, storage errors don't block record deletion, tests pass.",
+      "phase": 7,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement forward relation fields",
+      "description": "Implement Relation field type that stores related record IDs (single or multiple). Validate that referenced records exist in the target collection. Support cascading behavior on delete (CASCADE, SET NULL, RESTRICT). Write tests for all cascade behaviors. Acceptance criteria: Relation fields store valid record IDs, invalid references rejected, cascade behaviors work correctly, tests pass.",
+      "phase": 8,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement relation expansion in API responses",
+      "description": "Support ?expand=relationField query parameter on record endpoints. When expand is specified, include full related records nested in the response instead of just IDs. Support dot-notation for nested expansion: ?expand=author.profile. Limit expansion depth to prevent abuse. Write tests. Acceptance criteria: Single and multi-relation expansion works, nested expansion works, circular references handled, depth limit enforced, tests pass.",
+      "phase": 8,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement back-relations",
+      "description": "Support back-relation expansion: ?expand=collectionName_via_fieldName. This returns records from another collection that reference the current record. Generate appropriate SQL JOINs. Write tests. Acceptance criteria: Back-relations return correct records, pagination supported on expanded relations, tests pass.",
+      "phase": 8,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement multi-relation add/remove modifiers",
+      "description": "For multi-valued relation fields, support +/- modifiers in update operations: {field+: 'id'} adds a relation, {field-: 'id'} removes a relation, without replacing the entire array. Write tests. Acceptance criteria: Add/remove modifiers work correctly, duplicates prevented, removing non-existent ID is no-op, tests pass.",
+      "phase": 8,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement view collections",
+      "description": "Implement View collection type that maps to a SQL VIEW. View collections have a custom SQL query, are read-only, and support the same list/view API as regular collections. Validate the SQL query on creation. Write tests. Acceptance criteria: View collections created from SQL, read operations work, write operations rejected, schema inferred from query, tests pass.",
+      "phase": 8,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Design realtime subscription system",
+      "description": "Design SSE-based realtime system. Plan: SSE connection endpoint, subscription management (subscribe/unsubscribe to collections/records), event broadcasting on record changes (create/update/delete), access rule enforcement on subscriptions. Acceptance criteria: Design doc covers SSE protocol, subscription management, event format, and auth integration.",
+      "phase": 9,
+      "required_role": "planner"
+    },
+    {
+      "title": "Implement SSE connection endpoint",
+      "description": "Create GET /api/realtime endpoint that establishes SSE connection. Assign client ID. Send periodic keep-alive comments. Handle connection lifecycle (connect, disconnect, reconnect). Use tokio broadcast channels for event distribution. Write tests for connection establishment and keep-alive. Acceptance criteria: SSE connections established, client IDs assigned, keep-alive works, clean disconnect handling, tests pass.",
+      "phase": 9,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement subscription management",
+      "description": "Create POST /api/realtime endpoint for managing subscriptions. Clients send JSON with clientId and subscriptions array (collection names or record IDs). Support subscribing and unsubscribing. Store subscription state per client. Write tests. Acceptance criteria: Clients can subscribe/unsubscribe to collections and specific records, subscription state tracked, tests pass.",
+      "phase": 9,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement event broadcasting on record changes",
+      "description": "When records are created, updated, or deleted, broadcast events to subscribed SSE clients. Event format: {action: 'create'|'update'|'delete', record: {...}}. Apply access rules to filter events per client (only send events the client has permission to see). Write tests. Acceptance criteria: Events broadcast on all record changes, access rules enforced per client, correct event format, tests pass.",
+      "phase": 9,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement SMTP email service",
+      "description": "Build an email service using lettre crate. Support configurable SMTP settings (host, port, TLS, username, password). Create email templates for: verification, password reset, email change, OTP. Support HTML and plain text. Write tests with mock SMTP server. Acceptance criteria: Emails sent via SMTP, all templates render correctly, TLS works, tests pass.",
+      "phase": 6,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement settings API for server configuration",
+      "description": "Create admin endpoints for managing server settings: SMTP configuration, S3 storage settings, application name/URL, auth settings, backup settings. Store in _settings table as key-value JSON. Write tests. Acceptance criteria: Settings can be read and updated by superusers, non-superusers denied, settings persist across restarts, tests pass.",
+      "phase": 5,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement backup and restore functionality",
+      "description": "Create admin endpoints: POST /_/api/backups (create backup), GET /_/api/backups (list backups), GET /_/api/backups/:name (download backup), DELETE /_/api/backups/:name (delete backup), POST /_/api/backups/:name/restore (restore). Backup is a SQLite database copy + files archive. Write tests. Acceptance criteria: Backups created, listed, downloaded, deleted, and restored successfully, tests pass.",
+      "phase": 9,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement request logging and audit trail",
+      "description": "Log all API requests to a _logs table: method, URL, status, IP, auth user, duration, created. Create admin endpoint: GET /_/api/logs (list with filtering), GET /_/api/logs/:id (view), GET /_/api/logs/stats (aggregate stats). Auto-cleanup old logs based on retention setting. Write tests. Acceptance criteria: All requests logged, logs queryable with filters, stats endpoint works, auto-cleanup works, tests pass.",
+      "phase": 9,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement CLI for server management",
+      "description": "Build CLI using clap crate. Commands: serve (start server with options for host/port/data-dir), migrate (run migrations), superuser create/update/delete, version. Write tests for CLI argument parsing. Acceptance criteria: CLI starts server, manages superusers, runs migrations, prints version, tests pass.",
+      "phase": 9,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Design admin dashboard UI/UX",
+      "description": "Design the admin dashboard UI for the superuser panel served at /_/. Create wireframes/mockups for: login page, dashboard overview, collections manager, collection schema editor, records browser/editor, settings pages (mail, storage, auth providers, backups), logs viewer. Follow PocketBase's UI patterns adapted to modern AstroJS. Acceptance criteria: Wireframes for all main views, component inventory, navigation flow documented.",
+      "phase": 10,
+      "required_role": "ui_ux"
+    },
+    {
+      "title": "Initialize AstroJS project for admin dashboard",
+      "description": "Create AstroJS project in frontend/ directory. Configure: TypeScript, Tailwind CSS, component framework (React or Svelte for interactive components). Set up build pipeline to output static files that get embedded in the Rust binary. Configure testing with Vitest and Playwright. Acceptance criteria: AstroJS project builds, dev server works, test runners configured, build output is static HTML/JS/CSS.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement admin dashboard API client",
+      "description": "Create a TypeScript API client for the admin dashboard. Type-safe methods for all admin endpoints: auth, collections, records, settings, logs, backups. Handle token storage, refresh, and error responses. Write unit tests. Acceptance criteria: API client covers all endpoints, TypeScript types match API responses, token management works, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement admin login page",
+      "description": "Build the superuser login page at /_/. Email/password form, error handling, redirect to dashboard on success. Store auth token in localStorage/cookie. Write tests. Acceptance criteria: Login form works, errors displayed, successful login redirects to dashboard, token persisted, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement admin dashboard layout and navigation",
+      "description": "Build the main dashboard layout: sidebar navigation (Collections, Settings, Logs, Backups), header with user info and logout, content area. Responsive design. Auth guard redirecting to login if not authenticated. Write tests. Acceptance criteria: Layout renders correctly, navigation works, auth guard redirects unauthenticated users, responsive on mobile, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement collections list view",
+      "description": "Build the collections management page. Show list of all collections with name, type (base/auth/view), record count, and actions (edit, delete). Add 'New Collection' button. Search/filter collections. Write tests. Acceptance criteria: Collections listed with correct info, create/delete actions work, search filters list, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement collection schema editor",
+      "description": "Build the collection schema editor UI. Form for collection name, type selection. Dynamic field list with add/remove/reorder. Per-field configuration: name, type (dropdown), required toggle, unique toggle, type-specific options (min/max, pattern, select values, relation target, etc.). Preview of generated API endpoints. Write tests. Acceptance criteria: Schema can be created and modified, all field types configurable, validation errors shown, save persists changes, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement collection rules editor",
+      "description": "Build the access rules editor for each collection. Inputs for list_rule, view_rule, create_rule, update_rule, delete_rule, manage_rule. Syntax highlighting for rule expressions. Rule validation with error display. Helper documentation showing available variables (@request.auth.*, etc.). Write tests. Acceptance criteria: Rules can be set/modified per collection, syntax validation works, helper docs shown, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement records browser",
+      "description": "Build a data browser for viewing records in any collection. Table view with sortable columns, pagination controls, filter input (using PocketBase filter syntax), column visibility toggle. Click record to view details. Write tests. Acceptance criteria: Records displayed in table, sorting/filtering/pagination work, column toggle works, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement record create/edit form",
+      "description": "Build dynamic record creation and editing forms. Render form fields based on collection schema: text inputs, number inputs, boolean toggles, select dropdowns, relation pickers (with search), file upload with preview, JSON editor, rich text editor for Editor fields. Validate before submit. Write tests. Acceptance criteria: All field types render correct inputs, validation works, create and update operations succeed, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement SMTP settings page",
+      "description": "Build settings page for SMTP configuration: host, port, TLS toggle, username, password, sender name, sender address. Include 'Send Test Email' button. Show connection status. Write tests. Acceptance criteria: SMTP settings can be configured and saved, test email sends, validation for required fields, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement storage settings page",
+      "description": "Build settings page for file storage: toggle between local and S3. For S3: endpoint, bucket, region, access key, secret key. For local: storage path. Write tests. Acceptance criteria: Storage mode can be switched, S3 credentials saved, validation works, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement auth providers settings page",
+      "description": "Build settings page for managing OAuth2 providers. List available providers (Google, Microsoft). Per provider: enable/disable toggle, client ID, client secret, redirect URL display. Write tests. Acceptance criteria: Providers can be enabled/disabled, credentials saved, redirect URLs displayed, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement logs viewer page",
+      "description": "Build the request logs viewer. Table with: timestamp, method, URL, status code, IP, user, duration. Filtering by date range, status code, method. Log detail view. Stats overview with charts (requests/hour, error rate). Write tests. Acceptance criteria: Logs displayed with filtering, detail view works, stats render, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement backups management page",
+      "description": "Build the backups page. List existing backups with name, size, date. Actions: create new backup (with progress), download backup, delete backup, restore from backup (with confirmation). Write tests. Acceptance criteria: Backup CRUD operations work from UI, restore requires confirmation, progress shown during creation, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Embed admin dashboard static files in Rust binary",
+      "description": "Use rust-embed or include_dir to embed the built AstroJS static files into the Rust binary. Serve embedded files at /_/ path. Support development mode that proxies to AstroJS dev server. Write tests verifying embedded files are served. Acceptance criteria: Single binary serves admin dashboard, correct MIME types, SPA routing works, dev proxy mode works, tests pass.",
+      "phase": 10,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Design extensibility/hooks system",
+      "description": "Design the hooks system for Zerobase. Define hook points: onBeforeCreate, onAfterCreate, onBeforeUpdate, onAfterUpdate, onBeforeDelete, onAfterDelete, onBeforeAuth, onAfterAuth, custom routes. Design two modes: Rust library mode (use as framework) and JS hooks (embedded JS runtime). Acceptance criteria: Design doc covers all hook points, both extension modes, and example use cases.",
+      "phase": 11,
+      "required_role": "planner"
+    },
+    {
+      "title": "Implement hook registration and execution system",
+      "description": "Build the core hooks infrastructure. Define Hook trait with before/after methods for each record operation. Implement HookRegistry for registering and executing hooks in order. Hooks receive mutable context (record data, auth info) and can modify or abort operations. Write tests. Acceptance criteria: Hooks can be registered, execute in order, can modify data, can abort operations, tests pass.",
+      "phase": 11,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement Rust library/framework mode",
+      "description": "Allow Zerobase to be used as a Rust library. Expose public API: ZerobaseApp struct with methods to register custom routes (axum handlers), register hooks, configure middleware, access database. Document with examples. Write tests for custom route registration. Acceptance criteria: Zerobase usable as dependency, custom routes work alongside built-in routes, hooks integrate, example compiles and runs, tests pass.",
+      "phase": 11,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement embedded JavaScript hooks runtime",
+      "description": "Embed a JS runtime (boa_engine or deno_core) for executing JS hooks from pb_hooks/*.pb.js files. Expose bindings: $app.dao(), record operations, mail sending, custom routes. Watch for file changes in development. Write tests with sample JS hooks. Acceptance criteria: JS hooks execute on record events, $app bindings work, file watching reloads hooks, tests pass.",
+      "phase": 11,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement custom routes via hooks",
+      "description": "Allow both Rust and JS hooks to register custom HTTP routes. Routes integrate with axum router. Support middleware, auth, and request/response helpers. Write tests. Acceptance criteria: Custom routes registered and accessible, middleware applied, auth available in custom handlers, tests pass.",
+      "phase": 11,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Write comprehensive integration tests for auth flows",
+      "description": "Create end-to-end integration test suite covering: registration, login, token refresh, password reset, email verification, email change, OTP, OAuth2 (mocked), MFA, passkey (mocked). Test combinations and edge cases. Acceptance criteria: All auth flows tested end-to-end, edge cases covered (expired tokens, invalid codes, rate limiting), all tests pass.",
+      "phase": 12,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Write comprehensive integration tests for record CRUD with rules",
+      "description": "Create integration test suite covering: CRUD operations with various access rules, rule enforcement per operation type, context variable resolution (@request.auth.*, @request.data.*), rule-as-filter behavior on list. Acceptance criteria: All rule combinations tested, context variables resolve correctly, tests pass.",
+      "phase": 12,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Write integration tests for file storage",
+      "description": "Create integration test suite: file upload (single, multiple), download, deletion, protected files, thumbnail generation, S3 backend (mocked), file size/type validation. Acceptance criteria: All file operations tested with both local and mock S3, validation enforced, tests pass.",
+      "phase": 12,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Write integration tests for relations and expansion",
+      "description": "Create integration test suite: forward relations, back-relations, expansion (single, nested, circular), multi-relation modifiers (+/-), cascade delete behaviors. Acceptance criteria: All relation scenarios tested, expansion depth limits enforced, cascade behaviors verified, tests pass.",
+      "phase": 12,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Write integration tests for realtime subscriptions",
+      "description": "Create integration test suite: SSE connection, subscribe/unsubscribe, events on record create/update/delete, access rule filtering of events, reconnection behavior. Acceptance criteria: All realtime scenarios tested, events received correctly, auth enforced, tests pass.",
+      "phase": 12,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Write E2E tests for admin dashboard",
+      "description": "Create Playwright E2E test suite for admin dashboard: login flow, collection CRUD, schema editor, record browser, settings pages, logs viewer, backup operations. Acceptance criteria: All main user flows tested, tests run against real backend, all pass.",
+      "phase": 12,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement rate limiting middleware",
+      "description": "Add rate limiting using tower-governor or custom implementation. Configure per-endpoint limits (especially auth endpoints). Return 429 with Retry-After header. Write tests. Acceptance criteria: Rate limits enforced, 429 returned when exceeded, Retry-After header set, different limits per endpoint, tests pass.",
+      "phase": 12,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement CORS configuration",
+      "description": "Make CORS middleware configurable via settings API. Support: allowed origins (list or wildcard), allowed methods, allowed headers, credentials, max age. Default permissive for development. Write tests. Acceptance criteria: CORS headers set correctly, configuration persisted, restrictive mode blocks unauthorized origins, tests pass.",
+      "phase": 12,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement request body size limits",
+      "description": "Configure maximum request body size globally and per-endpoint (larger for file uploads). Return 413 for oversized requests. Make configurable via settings. Write tests. Acceptance criteria: Oversized requests rejected with 413, file upload endpoints have higher limits, configurable, tests pass.",
+      "phase": 12,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Build single binary with embedded assets",
+      "description": "Configure the build to produce a single statically-linked binary containing the admin dashboard. Set up cross-compilation targets (Linux amd64, arm64, macOS, Windows). Create release build script. Write smoke test verifying binary starts and serves dashboard. Acceptance criteria: Single binary starts server and serves dashboard, cross-compilation works for main targets, smoke test passes.",
+      "phase": 12,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Write project documentation",
+      "description": "Create comprehensive documentation: README with quickstart, API reference covering all endpoints, configuration reference, deployment guide (Docker, systemd, bare metal), migration guide from PocketBase. Acceptance criteria: Docs cover all features, quickstart works for new users, API reference is complete.",
+      "phase": 12,
+      "required_role": "bare model"
+    },
+    {
+      "title": "Create Docker build configuration",
+      "description": "Create Dockerfile with multi-stage build: builder stage compiling Rust binary + AstroJS frontend, runtime stage with minimal image (distroless or alpine). Create docker-compose.yml for development. Write tests verifying Docker build and container startup. Acceptance criteria: Docker image builds, container starts and serves API + dashboard, image size under 50MB, tests pass.",
+      "phase": 12,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement auto-generated API documentation endpoint",
+      "description": "Create endpoint that auto-generates OpenAPI/Swagger documentation based on registered collections and their schemas. Serve Swagger UI at /_/api/docs. Dynamic update when collections change. Write tests. Acceptance criteria: OpenAPI spec generated for all endpoints, Swagger UI renders, spec updates when collections change, tests pass.",
+      "phase": 12,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement batch/bulk record operations",
+      "description": "Add batch operation endpoints: POST /api/batch for executing multiple operations in a single transaction. Support create, update, delete operations mixed. Atomic execution (all or nothing). Write tests. Acceptance criteria: Batch operations execute atomically, mixed operations work, rollback on failure, tests pass.",
+      "phase": 8,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement Select and MultiSelect field types",
+      "description": "Implement Select field (single value from allowed list) and MultiSelect field (multiple values from allowed list). Store as TEXT and JSON array respectively. Validate values against allowed list. Support in filtering (?= operator for contains). Write tests. Acceptance criteria: Select enforces single value from list, MultiSelect stores array, filtering works, tests pass.",
+      "phase": 3,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement JSON field type",
+      "description": "Implement JSON field type that stores arbitrary JSON. Validate that input is valid JSON. Support optional JSON schema validation via field options. Store as TEXT in SQLite. Write tests. Acceptance criteria: Valid JSON stored and retrieved, invalid JSON rejected, optional schema validation works, tests pass.",
+      "phase": 3,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement Editor (rich text) field type",
+      "description": "Implement Editor field type for rich text content. Store as HTML TEXT. Sanitize HTML input to prevent XSS (use ammonia crate). Support configurable allowed tags and attributes. Write tests including XSS prevention. Acceptance criteria: HTML stored and retrieved, XSS vectors sanitized, configurable allowed elements, tests pass.",
+      "phase": 3,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement DateTime field type with timezone handling",
+      "description": "Implement DateTime field type storing ISO 8601 strings. Validate format on input. Support timezone-aware and UTC-only modes. Support date-only mode. Support comparison operators in filters. Write tests. Acceptance criteria: Valid ISO 8601 dates accepted, invalid rejected, filtering by date range works, tests pass.",
+      "phase": 3,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement AutoDate field type",
+      "description": "Implement AutoDate field type that auto-populates with current datetime on create and/or update. Configurable for onCreate, onUpdate, or both. Cannot be manually set. Write tests. Acceptance criteria: Dates auto-set on create/update as configured, manual values ignored, tests pass.",
+      "phase": 3,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement Number field type with validation",
+      "description": "Implement Number field type supporting integers and floats. Field options: min, max, noDecimal (integer only). Store as REAL in SQLite. Validate constraints on input. Write tests. Acceptance criteria: Numbers stored correctly, min/max enforced, integer-only mode works, tests pass.",
+      "phase": 3,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement Bool field type",
+      "description": "Implement Bool field type. Store as INTEGER (0/1) in SQLite. Accept true/false/1/0 in input, normalize to boolean in output. Write tests. Acceptance criteria: Boolean values stored and retrieved correctly, various input formats accepted, tests pass.",
+      "phase": 3,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement Email field type",
+      "description": "Implement Email field type. Validate email format. Field options: exceptDomains (block list), onlyDomains (allow list). Store as TEXT. Write tests. Acceptance criteria: Valid emails accepted, invalid rejected, domain filtering works, tests pass.",
+      "phase": 3,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement URL field type",
+      "description": "Implement URL field type. Validate URL format (scheme required). Field options: exceptDomains, onlyDomains. Store as TEXT. Write tests. Acceptance criteria: Valid URLs accepted, invalid rejected, domain filtering works, tests pass.",
+      "phase": 3,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement Text field type with full options",
+      "description": "Implement Text field type with options: min length, max length, regex pattern validation. Store as TEXT in SQLite. Write tests for all validation options. Acceptance criteria: Text stored, min/max length enforced, regex patterns validated, tests pass.",
+      "phase": 3,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement File field type metadata",
+      "description": "Implement File field type storing filename(s) as TEXT/JSON. Field options: maxSelect (number of files), maxSize (bytes), mimeTypes (allowed types), thumbs (thumbnail sizes to generate). Validation enforced during upload. Write tests. Acceptance criteria: File metadata fields configured correctly, options validated, tests pass.",
+      "phase": 3,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement unique field constraint enforcement",
+      "description": "For fields marked as unique, enforce uniqueness at both the application layer (check before insert/update) and database layer (UNIQUE index). Handle unique constraint violations with clear error messages referencing the field name. Write tests. Acceptance criteria: Duplicate values rejected with clear errors, constraint enforced on create and update, tests pass.",
+      "phase": 3,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement system collection protections",
+      "description": "Prevent modification or deletion of system collections (those starting with _). Prevent schema changes to system fields (id, created, updated, and auth-specific fields). Write tests. Acceptance criteria: System collections cannot be deleted or renamed, system fields immutable, clear error messages, tests pass.",
+      "phase": 3,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement collection import/export",
+      "description": "Create admin endpoints for importing/exporting collection schemas as JSON. Support: export all collections, import collections (create or update). Validate imported schemas before applying. Write tests. Acceptance criteria: Schemas export as JSON, import creates/updates collections, invalid schemas rejected, tests pass.",
+      "phase": 4,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement record count endpoint",
+      "description": "Create GET /api/collections/:collection/records/count endpoint returning total record count with optional filter. Useful for dashboard widgets. Apply access rules. Write tests. Acceptance criteria: Count returned correctly, filters work, access rules enforced, tests pass.",
+      "phase": 4,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement auth identity listing endpoint",
+      "description": "Create endpoint to list external auth identities linked to an auth record: GET /api/collections/:collection/records/:id/external-auths. Shows linked OAuth providers. Support unlinking. Write tests. Acceptance criteria: External auths listed, unlinking works, only record owner or superuser can access, tests pass.",
+      "phase": 6,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement auth methods listing endpoint",
+      "description": "Create GET /api/collections/:collection/auth-methods endpoint. Returns available auth methods for the collection: password enabled, OAuth2 providers (with auth URLs), OTP enabled, MFA required. No auth required. Write tests. Acceptance criteria: All enabled auth methods returned with correct details, tests pass.",
+      "phase": 6,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement admin dashboard overview page",
+      "description": "Build dashboard home page showing: total collections count, total records count, storage used, recent activity (last 10 log entries), system health indicators. Write tests. Acceptance criteria: All stats display correctly, data fetched from API, page loads quickly, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement collection type-specific UI for auth collections",
+      "description": "In the schema editor, when collection type is 'auth', show auto-included auth fields (email, password, verified, etc.) as read-only. Show auth-specific settings: enabled auth methods, password requirements, token duration. Write tests. Acceptance criteria: Auth fields shown as non-removable, auth settings configurable, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement relation field picker component",
+      "description": "Build a reusable relation picker component for the record editor. Features: search records in target collection, select single or multiple, display selected record labels, remove selections. Write tests. Acceptance criteria: Search works, single/multi select modes, displays meaningful labels, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement file upload component",
+      "description": "Build a reusable file upload component. Features: drag and drop, click to browse, file preview (images), progress indicator, multiple files support, file size/type validation client-side. Write tests. Acceptance criteria: Upload via drag-drop and click, preview works for images, validation shown, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement collection delete with confirmation",
+      "description": "In the collections list, implement delete with confirmation modal. Show warning about data loss (record count will be deleted). Require typing collection name for dangerous collections with many records. Write tests. Acceptance criteria: Deletion requires confirmation, name-typing for large collections, success feedback shown, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement toast notification system",
+      "description": "Build a toast notification system for the admin dashboard. Support: success, error, warning, info types. Auto-dismiss with configurable duration. Stack multiple toasts. Use for all API operation feedback. Write tests. Acceptance criteria: Toasts appear and dismiss, types styled differently, stacking works, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement admin API endpoint documentation page",
+      "description": "Build a page showing auto-generated API documentation for each collection. For selected collection, show: all available endpoints with methods, URL patterns, request/response examples, filter syntax reference. Write tests. Acceptance criteria: Docs generated per collection, examples accurate, copy-paste friendly, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement graceful shutdown with in-flight request draining",
+      "description": "Ensure server gracefully shuts down on SIGTERM/SIGINT: stop accepting new connections, drain in-flight requests (with timeout), close database connections, flush logs. Write tests. Acceptance criteria: In-flight requests complete, new connections rejected during shutdown, clean exit, tests pass.",
+      "phase": 12,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement database connection health checks",
+      "description": "Add periodic database health checks. Include in /api/health response. Detect and recover from connection pool exhaustion. Log warnings for slow queries. Write tests. Acceptance criteria: Health endpoint reports DB status, pool exhaustion detected, slow query logging works, tests pass.",
+      "phase": 12,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement data export endpoint (CSV/JSON)",
+      "description": "Create admin endpoint for exporting collection records as CSV or JSON: GET /_/api/collections/:collection/export?format=csv|json. Support filtering. Stream large exports. Write tests. Acceptance criteria: CSV and JSON export work, filtering applied, large datasets streamed without memory issues, tests pass.",
+      "phase": 12,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Performance benchmark and optimization",
+      "description": "Create benchmark suite using criterion crate. Benchmark: record CRUD operations, filtered queries, relation expansion, concurrent requests. Identify and fix bottlenecks. Target: 1000+ simple reads/sec on single core. Write benchmark tests. Acceptance criteria: Benchmarks exist for key operations, performance targets met, no obvious bottlenecks.",
+      "phase": 12,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Security audit and hardening",
+      "description": "Audit all endpoints for: SQL injection (parameterized queries everywhere), XSS (HTML sanitization), CSRF (token validation), path traversal (file operations), timing attacks (constant-time password comparison), token security (proper signing, expiry). Fix any findings. Write security-focused tests. Acceptance criteria: No OWASP top 10 vulnerabilities, security tests pass, audit checklist completed.",
+      "phase": 12,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement frontend dark mode",
+      "description": "Add dark mode support to the admin dashboard. System preference detection, manual toggle, persist preference. Ensure all components look correct in both modes. Write visual regression tests. Acceptance criteria: Dark mode toggle works, system preference detected, all pages render correctly in both modes, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement frontend accessibility (a11y)",
+      "description": "Audit and fix accessibility issues: keyboard navigation, ARIA labels, focus management, color contrast, screen reader support. Run axe-core automated checks. Write accessibility tests. Acceptance criteria: WCAG 2.1 AA compliant, keyboard navigation works throughout, axe-core returns no violations, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement frontend error boundary and fallback UI",
+      "description": "Add error boundaries to catch and handle frontend crashes gracefully. Show user-friendly error messages with retry options. Log errors for debugging. Write tests for error boundary behavior. Acceptance criteria: Crashes caught and displayed gracefully, retry works, errors logged, tests pass.",
+      "phase": 10,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Create use case documentation for common patterns",
+      "description": "Write use case guides covering: setting up a blog (collections, relations, API usage), building a todo app, user authentication flow, file uploads, realtime chat with SSE, custom hooks for business logic. Each guide includes step-by-step instructions and code snippets. Acceptance criteria: 5+ use case guides, each fully working when followed, code snippets tested.",
+      "phase": 12,
+      "required_role": "bare model"
+    },
+    {
+      "title": "Implement collection webhook support",
+      "description": "Allow configuring webhooks per collection that fire on record changes. Settings: URL, events (create/update/delete), secret for HMAC signing. Async HTTP delivery with retry (3 attempts, exponential backoff). Log delivery status. Write tests. Acceptance criteria: Webhooks fire on configured events, HMAC signature correct, retries work, delivery logged, tests pass.",
+      "phase": 11,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement webhook management UI in admin dashboard",
+      "description": "Build webhook configuration UI in collection settings. List webhooks, add/edit/remove. Show delivery history with status. Test webhook button. Write tests. Acceptance criteria: Webhook CRUD from UI, delivery history shown, test button works, tests pass.",
+      "phase": 11,
+      "required_role": "dev_frontend"
+    },
+    {
+      "title": "Implement database indexing for custom fields",
+      "description": "Allow creating indexes on collection fields via the schema editor. Support single and composite indexes. Auto-create indexes on fields used in access rules. Write tests verifying index creation and query performance improvement. Acceptance criteria: Custom indexes can be created/dropped, composite indexes work, performance improves on indexed queries, tests pass.",
+      "phase": 4,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Implement search endpoint with full-text search",
+      "description": "Add full-text search support using SQLite FTS5. Create endpoint or enhance list endpoint with ?search= parameter. Auto-create FTS indexes for text fields marked as searchable. Rank results by relevance. Write tests. Acceptance criteria: FTS search returns relevant results, ranking works, searchable fields configurable, tests pass.",
+      "phase": 4,
+      "required_role": "dev_backend"
+    },
+    {
+      "title": "Final integration test: full PocketBase compatibility check",
+      "description": "Create a comprehensive integration test that exercises the full PocketBase-equivalent workflow: create superuser, create collections (base + auth + view), define relations, set access rules, create records, upload files, authenticate users, test realtime, test filtering/sorting/expansion. Acceptance criteria: Full workflow completes successfully end-to-end, API responses match expected PocketBase format.",
+      "phase": 12,
+      "required_role": "dev_backend"
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/zerobase-core",
+    "crates/zerobase-db",
+    "crates/zerobase-auth",
+    "crates/zerobase-api",
+    "crates/zerobase-files",
+    "crates/zerobase-admin",
+    "crates/zerobase-hooks",
+    "crates/zerobase-server",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+rust-version = "1.75"
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Web framework
+axum = { version = "0.8", features = ["macros", "multipart"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace", "fs"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Database
+rusqlite = { version = "0.32", features = ["bundled", "backup"] }
+r2d2 = "0.8"
+r2d2_sqlite = "0.25"
+
+# Error handling
+thiserror = "2"
+anyhow = "1"
+
+# Auth
+jsonwebtoken = "9"
+argon2 = "0.5"
+oauth2 = "5.0.0-rc.1"
+totp-rs = { version = "5", features = ["qr", "gen_secret"] }
+webauthn-rs = { version = "0.5", features = ["danger-allow-state-serialisation"] }
+webauthn-rs-proto = "0.5"
+data-encoding = "2"
+async-trait = "0.1"
+url = "2"
+lettre = { version = "0.11", default-features = false, features = ["builder", "hostname", "smtp-transport", "tokio1-rustls-tls"] }
+
+# Configuration
+clap = { version = "4", features = ["derive"] }
+config = "0.14"
+secrecy = { version = "0.10", features = ["serde"] }
+
+# Tracing / Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# JSON Schema validation
+jsonschema = "0.45"
+
+# HTML sanitization
+ammonia = "4"
+
+# Random number generation
+rand = "0.8"
+
+# Static file embedding
+rust-embed = { version = "8", features = ["mime-guess"] }
+mime_guess = "2"
+mime = "0.3"
+http = "1"
+hyper = { version = "1", features = ["full"] }
+hyper-util = { version = "0.1", features = ["client-legacy", "http1", "tokio"] }
+http-body-util = "0.1"
+
+# Rate limiting
+dashmap = "6"
+
+# Utilities
+uuid = { version = "1", features = ["v4", "v5", "serde"] }
+nanoid = "0.4"
+tokio-stream = { version = "0.1", features = ["sync"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Image processing (thumbnails)
+image = "0.25"
+
+# S3-compatible storage
+rust-s3 = { version = "0.37", default-features = false, features = ["tokio-rustls-tls"] }
+
+# Crypto (HMAC for webhook signatures)
+hmac = "0.12"
+sha2 = "0.10"
+hex = "0.4"
+
+# CSV export
+csv = "1"
+
+# Testing
+reqwest = { version = "0.12", features = ["json", "multipart"] }
+wiremock = "0.6"
+
+# Benchmarking
+criterion = { version = "0.5", features = ["html_reports"] }
+
+# Workspace crates
+zerobase-core = { path = "crates/zerobase-core" }
+zerobase-db = { path = "crates/zerobase-db" }
+zerobase-auth = { path = "crates/zerobase-auth" }
+zerobase-api = { path = "crates/zerobase-api" }
+zerobase-files = { path = "crates/zerobase-files" }
+zerobase-admin = { path = "crates/zerobase-admin" }
+zerobase-hooks = { path = "crates/zerobase-hooks" }
+zerobase-server = { path = "crates/zerobase-server" }

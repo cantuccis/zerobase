@@ -1,0 +1,20 @@
+[package]
+name = "zerobase-hooks"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+zerobase-core = { workspace = true }
+boa_engine = { version = "0.20", features = ["annex-b"] }
+boa_gc = "0.20"
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+notify = { version = "7", default-features = false, features = ["macos_fsevent"] }
+tokio = { workspace = true }
+parking_lot = "0.12"
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { workspace = true }

@@ -1,0 +1,21 @@
+[package]
+name = "zerobase-files"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+zerobase-core = { workspace = true }
+zerobase-db = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+rust-s3 = { workspace = true }
+secrecy = { workspace = true }
+image = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { workspace = true }
+urlencoding = "2"

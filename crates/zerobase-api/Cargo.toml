@@ -1,0 +1,34 @@
+[package]
+name = "zerobase-api"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+zerobase-core = { workspace = true }
+zerobase-db = { workspace = true }
+zerobase-auth = { workspace = true }
+zerobase-files = { workspace = true }
+zerobase-admin = { workspace = true }
+chrono = { workspace = true }
+axum = { workspace = true }
+tokio = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+webauthn-rs = { workspace = true }
+nanoid = { workspace = true }
+dashmap = { workspace = true }
+tokio-stream = { workspace = true }
+csv = { workspace = true }
+
+[dev-dependencies]
+async-trait = { workspace = true }
+tracing-subscriber = { workspace = true }
+reqwest = { workspace = true }
+tokio = { workspace = true }
+image = { workspace = true }
+tempfile = "3"

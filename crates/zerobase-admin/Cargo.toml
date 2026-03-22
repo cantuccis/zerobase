@@ -1,0 +1,31 @@
+[package]
+name = "zerobase-admin"
+version.workspace = true
+edition.workspace = true
+
+[features]
+default = ["embed-dashboard"]
+embed-dashboard = []
+dev-proxy = ["reqwest"]
+
+[dependencies]
+zerobase-core = { workspace = true }
+zerobase-db = { workspace = true }
+zerobase-auth = { workspace = true }
+axum = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+rust-embed = { workspace = true }
+mime_guess = { workspace = true }
+mime = { workspace = true }
+http = { workspace = true }
+tokio = { workspace = true }
+reqwest = { workspace = true, optional = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full", "test-util"] }
+reqwest = { workspace = true, features = ["json"] }
