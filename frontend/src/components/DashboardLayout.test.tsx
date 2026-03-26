@@ -67,7 +67,7 @@ describe('DashboardLayout', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Sign Out')).toBeInTheDocument();
+      expect(screen.getByText('SIGN OUT')).toBeInTheDocument();
     });
   });
 
@@ -120,10 +120,10 @@ describe('DashboardLayout', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Sign Out')).toBeInTheDocument();
+      expect(screen.getByText('SIGN OUT')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByText('Sign Out'));
+    await user.click(screen.getByText('SIGN OUT'));
 
     expect(mockLogout).toHaveBeenCalled();
     expect(window.location.href).toBe('/_/login');
@@ -179,9 +179,8 @@ describe('DashboardLayout', () => {
     );
 
     await waitFor(() => {
-      // Brand appears in sidebar and mobile header
-      const brandLinks = screen.getAllByText('Zerobase');
-      expect(brandLinks.length).toBeGreaterThanOrEqual(1);
+      // Brand appears in sidebar as "ADMIN" and mobile header as "ZEROBASE"
+      expect(screen.getByText('ZEROBASE')).toBeInTheDocument();
     });
   });
 });

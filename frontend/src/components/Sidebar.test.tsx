@@ -121,10 +121,10 @@ describe('Sidebar', () => {
     expect(screen.getByText('Backups')).toBeInTheDocument();
   });
 
-  it('renders the Zerobase brand link', () => {
+  it('renders the brand link', () => {
     render(<Sidebar currentPath="/_/" />);
 
-    const brandLink = screen.getByText('Zerobase');
+    const brandLink = screen.getByText('ADMIN');
     expect(brandLink).toBeInTheDocument();
     expect(brandLink.closest('a')).toHaveAttribute('href', '/_/');
   });
@@ -154,8 +154,8 @@ describe('Sidebar', () => {
 
     const overviewLink = screen.getByText('Overview').closest('a');
     expect(overviewLink).toHaveAttribute('aria-current', 'page');
-    expect(overviewLink?.className).toContain('bg-blue-50');
-    expect(overviewLink?.className).toContain('text-blue-700');
+    expect(overviewLink?.className).toContain('bg-primary');
+    expect(overviewLink?.className).toContain('text-on-primary');
   });
 
   it('marks Collections as active for collections path', () => {
@@ -172,8 +172,8 @@ describe('Sidebar', () => {
     render(<Sidebar currentPath="/_/" />);
 
     const settingsLink = screen.getByText('Settings').closest('a');
-    expect(settingsLink?.className).toContain('text-gray-700');
-    expect(settingsLink?.className).not.toContain('bg-blue-50');
+    expect(settingsLink?.className).toContain('text-outline');
+    expect(settingsLink?.className).not.toContain('bg-primary');
   });
 
   it('has navigation landmark with accessible label', () => {
@@ -246,8 +246,8 @@ describe('MobileSidebar', () => {
     await user.click(screen.getByLabelText('Open navigation menu'));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
 
-    // Click the backdrop (the div with bg-black/30)
-    const backdrop = container.querySelector('.bg-black\\/30');
+    // Click the backdrop (the div with bg-primary/50)
+    const backdrop = container.querySelector('.bg-primary\\/50');
     expect(backdrop).toBeTruthy();
     await user.click(backdrop!);
 
@@ -262,7 +262,7 @@ describe('MobileSidebar', () => {
 
     const logsLink = screen.getByText('Logs').closest('a');
     expect(logsLink).toHaveAttribute('aria-current', 'page');
-    expect(logsLink?.className).toContain('bg-blue-50');
+    expect(logsLink?.className).toContain('bg-primary');
   });
 
   it('drawer has proper ARIA attributes', async () => {

@@ -144,7 +144,8 @@ describe('ToastContainer', () => {
     fireEvent.click(screen.getByText('Add Error'));
 
     const alerts = screen.getAllByRole('alert');
-    expect(alerts[0].className).toContain('bg-green-50');
-    expect(alerts[1].className).toContain('bg-red-50');
+    // Success uses default primary border; error uses error-colored border
+    expect(alerts[0].className).toContain('border-primary');
+    expect(alerts[1].className).toContain('border-error');
   });
 });

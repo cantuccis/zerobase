@@ -76,7 +76,6 @@ describe('RulesEditor', () => {
     it('renders the rules editor section', () => {
       render(<RulesEditor rules={lockedRules()} onChange={onChange} />);
       expect(screen.getByTestId('rules-editor')).toBeInTheDocument();
-      expect(screen.getByText('API Rules')).toBeInTheDocument();
     });
 
     it('renders all 5 base rule fields', () => {
@@ -115,25 +114,25 @@ describe('RulesEditor', () => {
       expect(screen.getByTestId('rule-input-viewRule')).toBeInTheDocument();
     });
 
-    it('shows "Locked" badge for null rules', () => {
+    it('shows "LOCKED" badge for null rules', () => {
       render(<RulesEditor rules={lockedRules()} onChange={onChange} />);
       const listField = screen.getByTestId('rule-field-listRule');
       const badge = within(listField).getByTestId('rule-badge-listRule');
-      expect(badge).toHaveTextContent('Locked');
+      expect(badge).toHaveTextContent(/LOCKED/i);
     });
 
-    it('shows "Public" badge for empty string rules', () => {
+    it('shows "PUBLIC" badge for empty string rules', () => {
       render(<RulesEditor rules={openRules()} onChange={onChange} />);
       const listField = screen.getByTestId('rule-field-listRule');
       const badge = within(listField).getByTestId('rule-badge-listRule');
-      expect(badge).toHaveTextContent('Public');
+      expect(badge).toHaveTextContent(/PUBLIC/i);
     });
 
-    it('shows "Conditional" badge for expression rules', () => {
+    it('shows "CONDITIONAL" badge for expression rules', () => {
       render(<RulesEditor rules={mixedRules()} onChange={onChange} />);
       const viewField = screen.getByTestId('rule-field-viewRule');
       const badge = within(viewField).getByTestId('rule-badge-viewRule');
-      expect(badge).toHaveTextContent('Conditional');
+      expect(badge).toHaveTextContent(/CONDITIONAL/i);
     });
 
     it('displays rule descriptions', () => {
@@ -374,11 +373,11 @@ describe('RulesEditor', () => {
 
       await user.click(toggle);
       expect(screen.getByTestId('rules-helper-docs')).toBeInTheDocument();
-      expect(toggle).toHaveTextContent('Hide Reference');
+      expect(toggle).toHaveTextContent(/Hide Reference/);
 
       await user.click(toggle);
       expect(screen.queryByTestId('rules-helper-docs')).not.toBeInTheDocument();
-      expect(toggle).toHaveTextContent('Show Reference');
+      expect(toggle).toHaveTextContent(/Show Reference/);
     });
   });
 
@@ -527,17 +526,17 @@ describe('RulesEditor', () => {
       // listRule = '' (public)
       expect(screen.getByTestId('rule-input-listRule')).toBeInTheDocument();
       const listBadge = screen.getByTestId('rule-badge-listRule');
-      expect(listBadge).toHaveTextContent('Public');
+      expect(listBadge).toHaveTextContent(/PUBLIC/i);
 
       // viewRule = expression (conditional)
       expect(screen.getByTestId('rule-input-viewRule')).toBeInTheDocument();
       const viewBadge = screen.getByTestId('rule-badge-viewRule');
-      expect(viewBadge).toHaveTextContent('Conditional');
+      expect(viewBadge).toHaveTextContent(/CONDITIONAL/i);
 
       // deleteRule = null (locked)
       expect(screen.getByTestId('rule-locked-deleteRule')).toBeInTheDocument();
       const deleteBadge = screen.getByTestId('rule-badge-deleteRule');
-      expect(deleteBadge).toHaveTextContent('Locked');
+      expect(deleteBadge).toHaveTextContent(/LOCKED/i);
     });
   });
 });

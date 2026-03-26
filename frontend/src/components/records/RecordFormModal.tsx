@@ -234,7 +234,7 @@ export function RecordFormModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 sm:items-center"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-primary/40 dark:bg-on-primary/40 p-4 sm:items-center animate-fade-in"
       role="dialog"
       aria-modal="true"
       aria-labelledby="record-form-title"
@@ -245,21 +245,21 @@ export function RecordFormModal({
       <div
         ref={modalRef}
         tabIndex={-1}
-        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg bg-white dark:bg-gray-800 shadow-xl"
+        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-primary dark:border-on-primary bg-surface dark:bg-surface animate-slide-up"
         data-testid="record-form-modal"
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-4">
-          <h3 id="record-form-title" className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-primary dark:border-on-primary bg-primary dark:bg-on-primary px-6 py-4">
+          <h3 id="record-form-title" className="text-lg font-semibold text-on-primary dark:text-primary">
             {isEdit ? 'Edit Record' : 'New Record'}
-            <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+            <span className="ml-2 text-sm font-normal text-on-primary/70 dark:text-primary/70">
               {collection.name}
             </span>
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1.5 text-gray-400 dark:text-gray-500 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-400"
+            className="p-1.5 text-on-primary dark:text-primary hover:text-on-primary/70 dark:hover:text-primary/70"
             aria-label="Close form"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -276,7 +276,7 @@ export function RecordFormModal({
             {serverError && (
               <div
                 role="alert"
-                className="rounded-md bg-red-50 dark:bg-red-900/30 px-4 py-3 text-sm text-red-700 dark:text-red-400"
+                className="border border-error dark:border-error px-4 py-3 text-sm text-error dark:text-error"
                 data-testid="server-error"
               >
                 {serverError}
@@ -285,9 +285,9 @@ export function RecordFormModal({
 
             {/* Record ID (read-only in edit mode) */}
             {isEdit && record && (
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Record ID</label>
-                <p className="font-mono text-sm text-gray-500 dark:text-gray-400" data-testid="record-id-display">
+              <div className="space-y-1.5">
+                <label className="text-label-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant dark:text-on-surface-variant">Record ID</label>
+                <p className="font-mono text-sm text-secondary dark:text-secondary" data-testid="record-id-display">
                   {record.id}
                 </p>
               </div>
@@ -307,25 +307,25 @@ export function RecordFormModal({
             ))}
 
             {editableFields.length === 0 && (
-              <p className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+              <p className="py-4 text-center text-sm text-secondary dark:text-secondary">
                 No editable fields in this collection.
               </p>
             )}
           </div>
 
           {/* Footer */}
-          <div className="sticky bottom-0 flex items-center justify-end gap-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-6 py-4">
+          <div className="sticky bottom-0 flex items-center justify-end gap-3 border-t border-primary dark:border-on-primary bg-surface-container-low dark:bg-surface-container-low px-6 py-4">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="border border-primary dark:border-on-primary bg-surface dark:bg-surface px-4 py-2 text-sm font-medium text-on-surface dark:text-on-surface hover:bg-surface-container-low dark:hover:bg-surface-container-low"
               disabled={submitting}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
+              className="bg-primary dark:bg-on-primary px-4 py-2 text-sm font-medium text-on-primary dark:text-primary disabled:cursor-not-allowed disabled:opacity-60"
               disabled={submitting}
               data-testid="record-form-submit"
             >

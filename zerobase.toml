@@ -1,0 +1,66 @@
+# Zerobase Configuration
+#
+# Copy this file to `zerobase.toml` in your working directory and adjust as needed.
+# Alternatively, set ZEROBASE_CONFIG=/path/to/your.toml to use a custom path.
+#
+# All values shown below are the defaults unless noted otherwise.
+# Environment variable overrides use the ZEROBASE__ prefix with __ for nesting,
+# e.g. ZEROBASE__SERVER__PORT=9090
+
+# ── Server ────────────────────────────────────────────────────────────────────
+
+[server]
+host = "127.0.0.1"
+port = 9099
+# "json" for production, "pretty" for development
+log_format = "json"
+
+# ── Database ──────────────────────────────────────────────────────────────────
+
+[database]
+path = "zerobase_data/data.db"
+max_read_connections = 8
+busy_timeout_ms = 5000
+
+# ── Auth ──────────────────────────────────────────────────────────────────────
+
+[auth]
+# REQUIRED — HMAC secret used to sign JWTs. Must be a long, random string.
+# Generate one with: openssl rand -hex 32
+token_secret = "7752bb5e34171327bcaa61e5684ed495d063e0fb1d0422178d978b9f238bdf32"
+# Token validity in seconds (default: 14 days)
+token_duration_secs = 1209600
+
+# ── Storage ───────────────────────────────────────────────────────────────────
+
+[storage]
+# "local" for filesystem, "s3" for S3-compatible object storage
+backend = "local"
+local_path = "zerobase_data/storage"
+
+# Uncomment and configure when backend = "s3":
+# [storage.s3]
+# bucket = "my-bucket"
+# region = "us-east-1"
+# access_key = ""
+# secret_key = ""
+# endpoint = ""              # optional — custom endpoint for S3-compatible APIs
+# force_path_style = false   # optional — set true for MinIO / path-style URLs
+
+# ── SMTP ──────────────────────────────────────────────────────────────────────
+
+[smtp]
+enabled = false
+# host = "smtp.example.com"
+# port = 587
+# username = ""
+# password = ""
+# sender_address = "noreply@example.com"
+# sender_name = "Zerobase"
+# tls = true
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+
+[logs]
+# Days to retain request logs before automatic cleanup
+retention_days = 7

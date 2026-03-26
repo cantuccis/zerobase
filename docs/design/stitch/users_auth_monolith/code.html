@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BACKEND_ENGINE | Users &amp; Auth</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "tertiary-fixed": "#5e5e5e",
+              "tertiary-fixed-dim": "#474747",
+              "surface-container": "#eeeeee",
+              "primary-fixed-dim": "#474747",
+              "on-primary-fixed": "#ffffff",
+              "on-primary": "#e2e2e2",
+              "secondary-fixed": "#c6c6c6",
+              "primary-container": "#3b3b3b",
+              "on-primary-container": "#ffffff",
+              "tertiary-container": "#747474",
+              "tertiary": "#3b3b3b",
+              "on-tertiary-fixed": "#ffffff",
+              "on-surface-variant": "#474747",
+              "outline-variant": "#c6c6c6",
+              "on-error-container": "#410002",
+              "on-tertiary-container": "#ffffff",
+              "secondary": "#5e5e5e",
+              "on-tertiary-fixed-variant": "#e2e2e2",
+              "on-secondary": "#ffffff",
+              "error": "#ba1a1a",
+              "surface-container-low": "#f3f3f4",
+              "inverse-on-surface": "#f0f1f1",
+              "secondary-container": "#d4d4d4",
+              "primary": "#000000",
+              "surface-dim": "#dadada",
+              "on-background": "#1a1c1c",
+              "on-secondary-fixed": "#1b1b1b",
+              "inverse-primary": "#c6c6c6",
+              "on-primary-fixed-variant": "#e2e2e2",
+              "on-secondary-fixed-variant": "#3b3b3b",
+              "surface-container-highest": "#e2e2e2",
+              "background": "#f9f9f9",
+              "surface-tint": "#5e5e5e",
+              "surface-bright": "#f9f9f9",
+              "surface": "#f9f9f9",
+              "outline": "#777777",
+              "on-secondary-container": "#1b1b1b",
+              "inverse-surface": "#2f3131",
+              "on-tertiary": "#e2e2e2",
+              "surface-container-lowest": "#ffffff",
+              "on-error": "#ffffff",
+              "error-container": "#ffdad6",
+              "on-surface": "#1a1c1c",
+              "surface-variant": "#e2e2e2",
+              "surface-container-high": "#e8e8e8",
+              "primary-fixed": "#5e5e5e",
+              "secondary-fixed-dim": "#ababab"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"none": "0", "DEFAULT": "0", "lg": "0", "xl": "0", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-white text-black antialiased">
+<!-- SideNavBar (Shared Component) -->
+<aside class="fixed left-0 top-0 h-full flex flex-col h-screen w-64 border-r border-black bg-white dark:bg-black">
+<div class="p-8">
+<div class="text-lg font-black tracking-tighter text-black dark:text-white">BACKEND_ENGINE</div>
+<div class="font-['Inter'] uppercase tracking-widest text-[10px] font-bold text-zinc-500 mt-1">V2.0.4_STABLE</div>
+</div>
+<nav class="flex-1 px-4 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 font-['Inter'] uppercase tracking-widest text-[12px] font-bold text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-none" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 font-['Inter'] uppercase tracking-widest text-[12px] font-bold bg-black text-white dark:bg-white dark:text-black border-l-4 border-black dark:border-white transition-none" href="#">
+<span class="material-symbols-outlined">database</span>
+                Collections
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 font-['Inter'] uppercase tracking-widest text-[12px] font-bold text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-none" href="#">
+<span class="material-symbols-outlined">terminal</span>
+                Logs
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 font-['Inter'] uppercase tracking-widest text-[12px] font-bold text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-none" href="#">
+<span class="material-symbols-outlined">settings</span>
+                Settings
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 font-['Inter'] uppercase tracking-widest text-[12px] font-bold text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-none" href="#">
+<span class="material-symbols-outlined">settings_backup_restore</span>
+                Backups
+            </a>
+</nav>
+<div class="p-6">
+<button class="w-full bg-black text-white dark:bg-white dark:text-black px-4 py-3 font-['Inter'] uppercase tracking-widest text-[12px] font-bold transition-none active:scale-[0.98]">
+                New Record
+            </button>
+</div>
+</aside>
+<!-- TopNavBar (Shared Component) -->
+<header class="flex items-center justify-between px-8 ml-64 w-[calc(100%-16rem)] w-full h-16 border-b border-black bg-white dark:bg-black sticky top-0 z-10">
+<div class="flex items-center gap-4">
+<span class="font-['Inter'] text-sm font-medium text-black dark:text-white uppercase tracking-widest">System Status: Active</span>
+</div>
+<div class="flex items-center gap-8">
+<div class="flex gap-6 items-center">
+<a class="font-['Inter'] text-sm font-medium text-zinc-500 hover:text-black dark:hover:text-white transition-none" href="#">Docs</a>
+<a class="font-['Inter'] text-sm font-medium text-zinc-500 hover:text-black dark:hover:text-white transition-none" href="#">API</a>
+<a class="font-['Inter'] text-sm font-medium text-zinc-500 hover:text-black dark:hover:text-white transition-none" href="#">Support</a>
+</div>
+<div class="flex items-center gap-4 border-l border-zinc-200 dark:border-zinc-800 pl-6">
+<span class="material-symbols-outlined cursor-pointer text-zinc-500 hover:text-black transition-none">notifications</span>
+<span class="material-symbols-outlined cursor-pointer text-zinc-500 hover:text-black transition-none">account_circle</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 p-12 min-h-screen bg-white">
+<div class="flex justify-between items-end mb-16">
+<div>
+<span class="font-['Inter'] text-[12px] font-bold uppercase tracking-widest text-zinc-500 block mb-2">Collection / Infrastructure</span>
+<h1 class="text-4xl font-extrabold tracking-tight text-black">Users &amp; Auth</h1>
+</div>
+<div class="flex gap-4">
+<div class="relative group">
+<span class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-[18px] text-zinc-400 group-hover:text-black">search</span>
+</span>
+<input class="pl-10 pr-4 py-2 border border-zinc-200 text-sm focus:ring-0 focus:border-black transition-none" placeholder="Filter users..." type="text"/>
+</div>
+<button class="bg-black text-white px-6 py-2 text-sm font-bold uppercase tracking-widest transition-none active:invert">Export CSV</button>
+</div>
+</div>
+<div class="grid grid-cols-12 gap-8">
+<!-- Users Table Section -->
+<div class="col-span-8">
+<div class="border border-black overflow-hidden bg-white">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-black text-white font-['Inter'] uppercase tracking-widest text-[11px] font-bold">
+<th class="p-4 border-r border-zinc-800">Email Address</th>
+<th class="p-4 border-r border-zinc-800 text-center">Verified</th>
+<th class="p-4 border-r border-zinc-800">Last Login</th>
+<th class="p-4 text-center">MFA Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-zinc-200">
+<tr class="hover:bg-zinc-50 transition-none group">
+<td class="p-4 font-medium text-sm border-r border-zinc-100">admin@backend.engine</td>
+<td class="p-4 text-center border-r border-zinc-100">
+<span class="material-symbols-outlined text-black" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</td>
+<td class="p-4 text-sm font-mono text-zinc-500 border-r border-zinc-100">2023-10-24 09:12:04</td>
+<td class="p-4 text-center">
+<span class="px-2 py-0.5 border border-black text-[10px] font-bold uppercase">ACTIVE</span>
+</td>
+</tr>
+<tr class="hover:bg-zinc-50 transition-none group">
+<td class="p-4 font-medium text-sm border-r border-zinc-100">j.smith@infrastructure.io</td>
+<td class="p-4 text-center border-r border-zinc-100">
+<span class="material-symbols-outlined text-black" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</td>
+<td class="p-4 text-sm font-mono text-zinc-500 border-r border-zinc-100">2023-10-23 18:45:12</td>
+<td class="p-4 text-center">
+<span class="px-2 py-0.5 border border-zinc-300 text-[10px] font-bold uppercase text-zinc-400">DISABLED</span>
+</td>
+</tr>
+<tr class="hover:bg-zinc-50 transition-none group">
+<td class="p-4 font-medium text-sm border-r border-zinc-100">dev_relay_04@internal.local</td>
+<td class="p-4 text-center border-r border-zinc-100">
+<span class="material-symbols-outlined text-zinc-300">cancel</span>
+</td>
+<td class="p-4 text-sm font-mono text-zinc-500 border-r border-zinc-100">2023-10-20 11:02:59</td>
+<td class="p-4 text-center">
+<span class="px-2 py-0.5 border border-zinc-300 text-[10px] font-bold uppercase text-zinc-400">DISABLED</span>
+</td>
+</tr>
+<tr class="hover:bg-zinc-50 transition-none group">
+<td class="p-4 font-medium text-sm border-r border-zinc-100">security_audit@global.com</td>
+<td class="p-4 text-center border-r border-zinc-100">
+<span class="material-symbols-outlined text-black" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</td>
+<td class="p-4 text-sm font-mono text-zinc-500 border-r border-zinc-100">2023-10-24 04:30:00</td>
+<td class="p-4 text-center">
+<span class="px-2 py-0.5 border border-black text-[10px] font-bold uppercase">ACTIVE</span>
+</td>
+</tr>
+<tr class="hover:bg-zinc-50 transition-none group">
+<td class="p-4 font-medium text-sm border-r border-zinc-100">support_tier2@backend.engine</td>
+<td class="p-4 text-center border-r border-zinc-100">
+<span class="material-symbols-outlined text-black" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</td>
+<td class="p-4 text-sm font-mono text-zinc-500 border-r border-zinc-100">2023-10-22 14:22:18</td>
+<td class="p-4 text-center">
+<span class="px-2 py-0.5 border border-black text-[10px] font-bold uppercase">ACTIVE</span>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="p-4 flex items-center justify-between border-t border-black bg-white">
+<span class="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Showing 5 of 1,204 Users</span>
+<div class="flex gap-2">
+<button class="w-8 h-8 border border-zinc-200 flex items-center justify-center hover:bg-black hover:text-white transition-none"><span class="material-symbols-outlined text-sm">chevron_left</span></button>
+<button class="w-8 h-8 border border-black flex items-center justify-center bg-black text-white font-bold text-xs">1</button>
+<button class="w-8 h-8 border border-zinc-200 flex items-center justify-center hover:bg-black hover:text-white transition-none font-bold text-xs">2</button>
+<button class="w-8 h-8 border border-zinc-200 flex items-center justify-center hover:bg-black hover:text-white transition-none"><span class="material-symbols-outlined text-sm">chevron_right</span></button>
+</div>
+</div>
+</div>
+</div>
+<!-- Auth Methods Config Panel -->
+<div class="col-span-4 space-y-8">
+<div class="border border-black p-8 bg-white">
+<h2 class="font-['Inter'] text-[12px] font-bold uppercase tracking-widest text-black mb-6 border-b border-zinc-100 pb-2">Auth Methods</h2>
+<div class="space-y-6">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<img class="w-5 h-5 grayscale" data-alt="Google G colorful logo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCgkQKrpbcL_HeIS805GWWAmQ-Wb7GvRDkuijbm7UlmDIBGpSXkUsjkVZ8mYKRO_Zrbqbeme34PUkhauAV6X4mDGsIU4yQWWO0Se5nqZNB1jWrFlJHw-OEQlKM4gitu_U_SJ5eNhV6D71wB82P2csRBxu8f58ANuV-7KSsp-D5AsUaBts2Li_nFpqcOxjxHaAK90EkpHMYAqgC6kBfdJIMzWKEgCLJ58vZzjcPRhK2gkhWAtXdSeascNfvJoWjggDSl3YdPax4sJ0E"/>
+<span class="text-sm font-bold uppercase tracking-tight">Google OAuth</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-10 h-5 bg-zinc-200 peer-focus:outline-none ring-0 rounded-none peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:h-4 after:w-4 after:transition-all peer-checked:bg-black"></div>
+</label>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<img class="w-5 h-5 grayscale" data-alt="GitHub octocat black logo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6ykdO_xYx8fFWQal8SvXcWsxidtxG_uYHKjFCtaosLuCTnye9Yo2Vue4QZCNc8ghYjo1ozTQyifTuJkJW3KtQMwt1d5QGxwtVWuTkZiiG1TUbf69l_nSV8iqllQgNab_mBUmJXCOOgorcQbBsogHyiF2_w5l3_weYoI64F6a3H438bytKgqbT_-Ij6_Yo-o05eSLVXPhpmlYmQ-Zv28BMVKxM8ZKS201Xqmb5-1pIKrF0ytxisw6iWJ29SmF_LMIkPrzrjs5WFZE"/>
+<span class="text-sm font-bold uppercase tracking-tight">GitHub Auth</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-10 h-5 bg-zinc-200 peer-focus:outline-none ring-0 rounded-none peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:h-4 after:w-4 after:transition-all peer-checked:bg-black"></div>
+</label>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px]">smartphone</span>
+<span class="text-sm font-bold uppercase tracking-tight">OTP (SMS/Email)</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-10 h-5 bg-zinc-200 peer-focus:outline-none ring-0 rounded-none peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:h-4 after:w-4 after:transition-all peer-checked:bg-black"></div>
+</label>
+</div>
+</div>
+<div class="mt-8 pt-8 border-t border-zinc-100">
+<h3 class="font-['Inter'] text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-4">Security Policy</h3>
+<div class="space-y-4">
+<div>
+<label class="text-[10px] font-bold uppercase block mb-1">Session Timeout (min)</label>
+<input class="w-full border border-black px-3 py-2 text-sm font-mono focus:ring-0" type="number" value="60"/>
+</div>
+<button class="w-full bg-white border border-black text-black px-4 py-3 font-['Inter'] uppercase tracking-widest text-[12px] font-bold hover:bg-black hover:text-white transition-none">
+                                Commit Changes
+                            </button>
+</div>
+</div>
+</div>
+<div class="bg-zinc-100 p-8">
+<div class="flex items-center gap-3 mb-4">
+<span class="material-symbols-outlined text-zinc-400">info</span>
+<h3 class="text-[10px] font-bold uppercase tracking-widest text-zinc-500">System Information</h3>
+</div>
+<p class="text-[12px] leading-relaxed text-zinc-600">
+                        All authentication events are logged to the <span class="text-black font-bold">SEC_AUDIT</span> channel. 
+                        MFA Enforcement is currently <span class="bg-black text-white px-1 font-bold">OPTIONAL</span> for root users.
+                    </p>
+</div>
+</div>
+</div>
+<!-- Technical Data Modules (Grid Cells) -->
+<div class="mt-16 grid grid-cols-4 border-t border-l border-black">
+<div class="border-r border-b border-black p-8 text-center">
+<span class="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Total Users</span>
+<span class="text-4xl font-extrabold tracking-tight">1,204</span>
+</div>
+<div class="border-r border-b border-black p-8 text-center bg-zinc-50">
+<span class="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Active Sessions</span>
+<span class="text-4xl font-extrabold tracking-tight">82</span>
+</div>
+<div class="border-r border-b border-black p-8 text-center">
+<span class="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Verification Rate</span>
+<span class="text-4xl font-extrabold tracking-tight">98.4%</span>
+</div>
+<div class="border-r border-b border-black p-8 text-center">
+<span class="block text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2">Failed Logins (24h)</span>
+<span class="text-4xl font-extrabold tracking-tight text-error">12</span>
+</div>
+</div>
+</main>
+</body></html>

@@ -25,44 +25,13 @@ function formatDate(iso: string): string {
   });
 }
 
-// ── Icons ────────────────────────────────────────────────────────────────────
+// ── Spinner ──────────────────────────────────────────────────────────────────
 
-function DownloadIcon() {
+function Spinner({ className = 'h-4 w-4' }: { className?: string }) {
   return (
-    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-    </svg>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-    </svg>
-  );
-}
-
-function RestoreIcon() {
-  return (
-    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
-    </svg>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-    </svg>
-  );
-}
-
-function DatabaseIcon() {
-  return (
-    <svg className="h-12 w-12 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75" />
+    <svg className={`${className} animate-spin`} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
     </svg>
   );
 }
@@ -81,9 +50,6 @@ interface ConfirmModalProps {
 
 function ConfirmModal({ title, message, confirmLabel, confirmVariant = 'danger', onConfirm, onCancel, loading }: ConfirmModalProps) {
   const dialogRef = React.useRef<HTMLDivElement>(null);
-  const confirmClasses = confirmVariant === 'danger'
-    ? 'bg-red-600 text-white hover:bg-red-700 dark:hover:bg-red-600 focus-visible:ring-red-500'
-    : 'bg-blue-600 text-white hover:bg-blue-700 dark:hover:bg-blue-600 focus-visible:ring-blue-500';
 
   React.useEffect(() => {
     const cancelBtn = dialogRef.current?.querySelector<HTMLElement>('[data-testid="confirm-cancel"]');
@@ -116,7 +82,7 @@ function ConfirmModal({ title, message, confirmLabel, confirmVariant = 'danger',
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-primary/50 animate-fade-in"
       data-testid="confirm-modal"
       role="dialog"
       aria-modal="true"
@@ -124,16 +90,16 @@ function ConfirmModal({ title, message, confirmLabel, confirmVariant = 'danger',
       onClick={(e) => { if (e.target === e.currentTarget && !loading) onCancel(); }}
       ref={dialogRef}
     >
-      <div className="mx-4 w-full max-w-md rounded-lg bg-white dark:bg-gray-800 p-6 shadow-xl">
-        <h3 id="confirm-modal-title" className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{message}</p>
+      <div className="mx-4 w-full max-w-md border border-primary dark:border-primary bg-background dark:bg-background p-6 animate-scale-in">
+        <h3 id="confirm-modal-title" className="text-[12px] font-bold uppercase tracking-widest text-primary dark:text-primary">{title}</h3>
+        <p className="mt-3 text-sm text-on-surface dark:text-on-surface leading-relaxed">{message}</p>
 
         <div className="mt-6 flex justify-end gap-3">
           <button
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+            className="border border-primary dark:border-primary bg-background dark:bg-background px-5 py-2.5 text-[11px] font-bold uppercase tracking-wider text-primary dark:text-primary hover:bg-surface-container dark:hover:bg-surface-container disabled:opacity-50 transition-colors-fast"
             data-testid="confirm-cancel"
           >
             Cancel
@@ -142,7 +108,11 @@ function ConfirmModal({ title, message, confirmLabel, confirmVariant = 'danger',
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            className={`rounded-md px-4 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus:ring-offset-2 disabled:opacity-50 ${confirmClasses}`}
+            className={`px-5 py-2.5 text-[11px] font-bold uppercase tracking-wider disabled:opacity-50 ${
+              confirmVariant === 'danger'
+                ? 'bg-error text-on-error hover:opacity-90'
+                : 'bg-primary text-on-primary hover:opacity-90'
+            }`}
             data-testid="confirm-action"
           >
             {loading ? 'Processing\u2026' : confirmLabel}
@@ -292,6 +262,11 @@ export function BackupsPage() {
     }
   }, []);
 
+  // ── Computed metrics ───────────────────────────────────────────────────────
+
+  const totalSize = backups.reduce((sum, b) => sum + b.size, 0);
+  const newestBackup = backups.length > 0 ? backups[0] : null;
+
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
@@ -299,11 +274,12 @@ export function BackupsPage() {
       {/* Success message */}
       {successMessage && (
         <div
-          className="mb-4 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/30 px-4 py-3 text-sm text-green-700 dark:text-green-400"
+          className="mb-6 border border-primary dark:border-primary bg-surface-container-low dark:bg-surface-container-low px-4 py-3 text-[12px] font-bold uppercase tracking-wider text-primary dark:text-primary flex items-center gap-3"
           role="status"
           aria-live="polite"
           data-testid="success-message"
         >
+          <span className="material-symbols-outlined text-[16px]" aria-hidden="true">check_circle</span>
           {successMessage}
         </div>
       )}
@@ -311,15 +287,19 @@ export function BackupsPage() {
       {/* Error banner */}
       {error && (
         <div
-          className="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 px-4 py-3 text-sm text-red-700 dark:text-red-400"
+          className="mb-6 border border-error dark:border-error bg-error-container dark:bg-error-container px-4 py-3 text-[12px] font-bold uppercase tracking-wider text-on-error-container dark:text-on-error-container"
+          role="alert"
           data-testid="error-banner"
         >
           <div className="flex items-center justify-between">
-            <span>{error}</span>
+            <span className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[16px]" aria-hidden="true">error</span>
+              {error}
+            </span>
             <button
               type="button"
               onClick={() => { setError(null); fetchBackups(); }}
-              className="ml-4 text-sm font-medium text-red-700 dark:text-red-400 underline hover:text-red-900 dark:hover:text-red-300"
+              className="ml-4 text-[11px] font-bold uppercase tracking-wider underline"
             >
               Retry
             </button>
@@ -327,49 +307,52 @@ export function BackupsPage() {
         </div>
       )}
 
-      {/* Header with create button */}
-      <div className="mb-6 flex items-center justify-between" data-testid="backups-header">
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Create, download, and restore database backups.
-        </p>
-        <button
-          type="button"
-          onClick={handleCreateBackup}
-          disabled={creating}
-          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 dark:hover:bg-blue-600 focus-visible:outline-none focus-visible:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-          data-testid="create-backup-btn"
-        >
-          {creating ? (
-            <>
-              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              Creating\u2026
-            </>
-          ) : (
-            <>
-              <PlusIcon />
-              Create Backup
-            </>
-          )}
-        </button>
-      </div>
+      {/* Hero Header Section */}
+      <section className="mb-12" data-testid="backups-header">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-6">
+          <div>
+            <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-outline dark:text-outline mb-3">
+              Storage / System
+            </p>
+            <h2 className="text-[2rem] sm:text-[3.5rem] font-extrabold leading-none tracking-tighter text-primary dark:text-primary">
+              DATABASE BACKUPS
+            </h2>
+          </div>
+          <div className="pb-2">
+            <button
+              type="button"
+              onClick={handleCreateBackup}
+              disabled={creating}
+              className="bg-primary text-on-primary px-8 py-4 text-[12px] font-bold uppercase tracking-widest flex items-center gap-3 hover:opacity-90 disabled:opacity-50"
+              data-testid="create-backup-btn"
+            >
+              {creating ? (
+                <>
+                  <Spinner />
+                  Creating\u2026
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-[20px]" aria-hidden="true">add_circle</span>
+                  Create Backup
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+        <div className="h-1 bg-primary dark:bg-primary w-24"></div>
+      </section>
 
       {/* Loading skeletons */}
       {loading && (
-        <div className="space-y-3" data-testid="loading-skeleton">
+        <div className="border border-primary dark:border-primary animate-pulse-subtle" data-testid="loading-skeleton">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="animate-pulse rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <div className="h-4 w-48 rounded bg-gray-200 dark:bg-gray-600" />
-                  <div className="h-3 w-32 rounded bg-gray-100 dark:bg-gray-700" />
-                </div>
-                <div className="flex gap-2">
-                  <div className="h-8 w-8 rounded bg-gray-200 dark:bg-gray-600" />
-                  <div className="h-8 w-8 rounded bg-gray-200 dark:bg-gray-600" />
-                  <div className="h-8 w-8 rounded bg-gray-200 dark:bg-gray-600" />
+            <div key={i} className={`p-6 ${i < 3 ? 'border-b border-primary dark:border-primary' : ''}`}>
+              <div className="animate-pulse flex items-center gap-4">
+                <div className="h-6 w-6 bg-surface-container-high dark:bg-surface-container-high shrink-0" />
+                <div className="space-y-2 flex-1 min-w-0">
+                  <div className="h-4 w-48 max-w-full bg-surface-container-high dark:bg-surface-container-high" />
+                  <div className="h-3 w-32 max-w-full bg-surface-container dark:bg-surface-container" />
                 </div>
               </div>
             </div>
@@ -379,144 +362,176 @@ export function BackupsPage() {
 
       {/* Empty state */}
       {!loading && backups.length === 0 && (
-        <div className="rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700 p-12 text-center" data-testid="empty-state">
-          <DatabaseIcon />
-          <h3 className="mt-4 text-base font-semibold text-gray-900 dark:text-gray-100">No backups yet</h3>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <div className="border border-primary dark:border-primary p-16 text-center" data-testid="empty-state">
+          <span className="material-symbols-outlined text-[48px] text-outline dark:text-outline" aria-hidden="true">database</span>
+          <h3 className="mt-4 text-[12px] font-bold uppercase tracking-widest text-primary dark:text-primary">No Backups Yet</h3>
+          <p className="mt-2 text-sm text-secondary dark:text-secondary">
             Create your first backup to protect your data.
           </p>
           <button
             type="button"
             onClick={handleCreateBackup}
             disabled={creating}
-            className="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50"
+            className="mt-6 bg-primary text-on-primary px-8 py-3 text-[12px] font-bold uppercase tracking-widest inline-flex items-center gap-3 hover:opacity-90 disabled:opacity-50"
             data-testid="empty-create-btn"
           >
-            <PlusIcon />
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add_circle</span>
             Create Backup
           </button>
         </div>
       )}
 
-      {/* Backup list */}
+      {/* Backup Grid Table */}
       {!loading && backups.length > 0 && (
-        <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm" data-testid="backups-list">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-900">
-              <tr>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  Name
-                </th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  Size
-                </th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  Created
-                </th>
-                <th scope="col" className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {backups.map((backup) => {
-                const isDeleting = deletingName === backup.name;
-                const isDownloading = downloadingName === backup.name;
-                const isRestoring = restoringName === backup.name;
-                const isBusy = isDeleting || isDownloading || isRestoring;
+        <div className="border border-primary dark:border-primary" role="table" aria-label="Backups" data-testid="backups-list">
+          {/* Table Header — hidden on mobile */}
+          <div className="hidden md:grid md:grid-cols-12 gap-0" role="row">
+            <div className="col-span-6 border-r border-b border-primary dark:border-primary p-4 bg-primary dark:bg-primary" role="columnheader">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-on-primary dark:text-on-primary">Name &amp; Path</span>
+            </div>
+            <div className="col-span-2 border-r border-b border-primary dark:border-primary p-4 bg-primary dark:bg-primary text-center" role="columnheader">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-on-primary dark:text-on-primary">Snapshot Date</span>
+            </div>
+            <div className="col-span-2 border-r border-b border-primary dark:border-primary p-4 bg-primary dark:bg-primary text-center" role="columnheader">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-on-primary dark:text-on-primary">Size</span>
+            </div>
+            <div className="col-span-2 border-b border-primary dark:border-primary p-4 bg-primary dark:bg-primary text-center" role="columnheader">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-on-primary dark:text-on-primary">Actions</span>
+            </div>
+          </div>
 
-                return (
-                  <tr key={backup.name} className="hover:bg-gray-50 dark:hover:bg-gray-700" data-testid={`backup-row-${backup.name}`}>
-                    <td className="whitespace-nowrap px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <svg className="h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
-                        </svg>
-                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{backup.name}</span>
-                      </div>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                      {formatBytes(backup.size)}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+          {/* Table Rows */}
+          {backups.map((backup) => {
+            const isDeleting = deletingName === backup.name;
+            const isDownloading = downloadingName === backup.name;
+            const isRestoring = restoringName === backup.name;
+            const isBusy = isDeleting || isDownloading || isRestoring;
+
+            return (
+              <div
+                key={backup.name}
+                className="border-b border-outline-variant dark:border-outline-variant last:border-b-0"
+                role="row"
+                data-testid={`backup-row-${backup.name}`}
+              >
+                {/* Mobile card layout */}
+                <div className="md:hidden p-5 space-y-3 hover:bg-surface-container-low dark:hover:bg-surface-container-low">
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-primary dark:text-primary text-[24px] shrink-0" aria-hidden="true">folder_zip</span>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-base text-on-background dark:text-on-background truncate font-mono">
+                        {backup.name}
+                      </p>
+                      <code className="text-[10px] text-outline dark:text-outline uppercase tracking-wider">
+                        pb_data/backups
+                      </code>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-mono text-[13px] text-on-background dark:text-on-background">{formatDate(backup.created)}</span>
+                    <span className="font-bold font-mono text-on-background dark:text-on-background">{formatBytes(backup.size)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => setConfirmRestore(backup.name)} disabled={isBusy} aria-label={`Restore from ${backup.name}`} className="min-h-[44px] min-w-[44px] flex items-center justify-center border border-primary hover:bg-primary hover:text-on-primary dark:hover:bg-primary dark:hover:text-on-primary text-on-background dark:text-on-background disabled:opacity-50 transition-colors-fast" data-testid={`restore-${backup.name}`}>
+                      {isRestoring ? <Spinner /> : <span className="material-symbols-outlined text-[20px]" aria-hidden="true">settings_backup_restore</span>}
+                    </button>
+                    <button type="button" onClick={() => handleDownload(backup.name)} disabled={isBusy} aria-label={`Download ${backup.name}`} className="min-h-[44px] min-w-[44px] flex items-center justify-center border border-primary hover:bg-primary hover:text-on-primary dark:hover:bg-primary dark:hover:text-on-primary text-on-background dark:text-on-background disabled:opacity-50 transition-colors-fast" data-testid={`download-${backup.name}`}>
+                      {isDownloading ? <Spinner /> : <span className="material-symbols-outlined text-[20px]" aria-hidden="true">download</span>}
+                    </button>
+                    <button type="button" onClick={() => setConfirmDelete(backup.name)} disabled={isBusy} aria-label={`Delete ${backup.name}`} className="min-h-[44px] min-w-[44px] flex items-center justify-center border border-error hover:bg-error hover:text-on-error text-on-background dark:text-on-background disabled:opacity-50 transition-colors-fast" data-testid={`delete-${backup.name}`}>
+                      {isDeleting ? <Spinner /> : <span className="material-symbols-outlined text-[20px]" aria-hidden="true">delete</span>}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Desktop grid layout */}
+                <div className="hidden md:grid md:grid-cols-12 gap-0">
+                  <div className="col-span-6 border-r border-outline-variant dark:border-outline-variant p-5 flex items-center gap-4 hover:bg-surface-container-low dark:hover:bg-surface-container-low" role="cell">
+                    <span className="material-symbols-outlined text-primary dark:text-primary text-[24px]" aria-hidden="true">folder_zip</span>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-base text-on-background dark:text-on-background truncate font-mono">
+                        {backup.name}
+                      </p>
+                      <code className="text-[10px] text-outline dark:text-outline uppercase tracking-wider">
+                        pb_data/backups
+                      </code>
+                    </div>
+                  </div>
+                  <div className="col-span-2 border-r border-outline-variant dark:border-outline-variant p-5 flex items-center justify-center hover:bg-surface-container-low dark:hover:bg-surface-container-low" role="cell">
+                    <p className="text-[13px] text-on-background dark:text-on-background font-mono">
                       {formatDate(backup.created)}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        {/* Download */}
-                        <button
-                          type="button"
-                          onClick={() => handleDownload(backup.name)}
-                          disabled={isBusy}
-                          title="Download backup"
-                          aria-label={`Download ${backup.name}`}
-                          className="rounded p-1.5 text-gray-400 dark:text-gray-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-50"
-                          data-testid={`download-${backup.name}`}
-                        >
-                          {isDownloading ? (
-                            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                            </svg>
-                          ) : (
-                            <DownloadIcon />
-                          )}
-                        </button>
-
-                        {/* Restore */}
-                        <button
-                          type="button"
-                          onClick={() => setConfirmRestore(backup.name)}
-                          disabled={isBusy}
-                          title="Restore from backup"
-                          aria-label={`Restore from ${backup.name}`}
-                          className="rounded p-1.5 text-gray-400 dark:text-gray-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/30 hover:text-yellow-600 dark:hover:text-yellow-400 disabled:opacity-50"
-                          data-testid={`restore-${backup.name}`}
-                        >
-                          {isRestoring ? (
-                            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                            </svg>
-                          ) : (
-                            <RestoreIcon />
-                          )}
-                        </button>
-
-                        {/* Delete */}
-                        <button
-                          type="button"
-                          onClick={() => setConfirmDelete(backup.name)}
-                          disabled={isBusy}
-                          title="Delete backup"
-                          aria-label={`Delete ${backup.name}`}
-                          className="rounded p-1.5 text-gray-400 dark:text-gray-500 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50"
-                          data-testid={`delete-${backup.name}`}
-                        >
-                          {isDeleting ? (
-                            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                            </svg>
-                          ) : (
-                            <TrashIcon />
-                          )}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                    </p>
+                  </div>
+                  <div className="col-span-2 border-r border-outline-variant dark:border-outline-variant p-5 flex items-center justify-center hover:bg-surface-container-low dark:hover:bg-surface-container-low" role="cell">
+                    <p className="font-bold text-lg text-on-background dark:text-on-background font-mono">
+                      {formatBytes(backup.size)}
+                    </p>
+                  </div>
+                  <div className="col-span-2 p-5 flex items-center justify-center gap-3 hover:bg-surface-container-low dark:hover:bg-surface-container-low" role="cell">
+                    <button type="button" onClick={() => setConfirmRestore(backup.name)} disabled={isBusy} title="Restore from backup" aria-label={`Restore from ${backup.name}`} className="p-2 border border-transparent hover:bg-primary hover:text-on-primary dark:hover:bg-primary dark:hover:text-on-primary text-on-background dark:text-on-background hover:border-primary dark:hover:border-primary disabled:opacity-50 transition-colors-fast" data-testid={`restore-desktop-${backup.name}`}>
+                      {isRestoring ? <Spinner /> : <span className="material-symbols-outlined text-[20px]" aria-hidden="true">settings_backup_restore</span>}
+                    </button>
+                    <button type="button" onClick={() => handleDownload(backup.name)} disabled={isBusy} title="Download backup" aria-label={`Download ${backup.name}`} className="p-2 border border-transparent hover:bg-primary hover:text-on-primary dark:hover:bg-primary dark:hover:text-on-primary text-on-background dark:text-on-background hover:border-primary dark:hover:border-primary disabled:opacity-50 transition-colors-fast" data-testid={`download-desktop-${backup.name}`}>
+                      {isDownloading ? <Spinner /> : <span className="material-symbols-outlined text-[20px]" aria-hidden="true">download</span>}
+                    </button>
+                    <button type="button" onClick={() => setConfirmDelete(backup.name)} disabled={isBusy} title="Delete backup" aria-label={`Delete ${backup.name}`} className="p-2 border border-transparent hover:bg-error hover:text-on-error text-on-background dark:text-on-background hover:border-error disabled:opacity-50 transition-colors-fast" data-testid={`delete-desktop-${backup.name}`}>
+                      {isDeleting ? <Spinner /> : <span className="material-symbols-outlined text-[20px]" aria-hidden="true">delete</span>}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {/* Summary */}
+      {/* Warning / Technical Note */}
       {!loading && backups.length > 0 && (
-        <p className="mt-3 text-xs text-gray-400 dark:text-gray-500" data-testid="backup-count">
-          {backups.length} backup{backups.length !== 1 ? 's' : ''} &middot;{' '}
-          {formatBytes(backups.reduce((sum, b) => sum + b.size, 0))} total
+        <div className="mt-12 p-6 border-l-4 border-primary dark:border-primary bg-surface-container dark:bg-surface-container flex items-start gap-5">
+          <div className="bg-primary dark:bg-primary text-on-primary dark:text-on-primary p-2 shrink-0">
+            <span className="material-symbols-outlined text-[24px]" aria-hidden="true">warning</span>
+          </div>
+          <div>
+            <h4 className="text-[12px] font-bold uppercase tracking-widest mb-2 text-primary dark:text-primary">
+              Technical Performance Note
+            </h4>
+            <p className="text-sm leading-relaxed max-w-3xl text-on-surface dark:text-on-surface">
+              Database operations will enter a <span className="font-bold underline">READ-ONLY</span> state during the backup compression process.
+              New record creation, file uploads, and session updates will be queued until the backup snapshot is successfully finalized.
+              For high-traffic environments, we recommend scheduling backups during maintenance windows.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Metrics Grid Footer */}
+      {!loading && backups.length > 0 && (
+        <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-0 border border-outline-variant dark:border-outline-variant" data-testid="backup-metrics">
+          <div className="border-r border-b sm:border-b-0 border-outline-variant dark:border-outline-variant p-6">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-outline dark:text-outline mb-2">Total Backups</p>
+            <p className="text-4xl font-extrabold text-primary dark:text-primary">{backups.length}</p>
+          </div>
+          <div className="border-b sm:border-b-0 sm:border-r border-outline-variant dark:border-outline-variant p-6">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-outline dark:text-outline mb-2">Storage Used</p>
+            <p className="text-4xl font-extrabold text-primary dark:text-primary font-mono">{formatBytes(totalSize)}</p>
+          </div>
+          <div className="border-r border-outline-variant dark:border-outline-variant p-6">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-outline dark:text-outline mb-2">Latest Backup</p>
+            <p className="text-lg font-extrabold text-primary dark:text-primary font-mono">
+              {newestBackup ? new Date(newestBackup.created).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '\u2014'}
+            </p>
+          </div>
+          <div className="p-6">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-outline dark:text-outline mb-2">Status</p>
+            <p className="text-4xl font-extrabold text-primary dark:text-primary">OK</p>
+          </div>
+        </div>
+      )}
+
+      {/* Summary line */}
+      {!loading && backups.length > 0 && (
+        <p className="mt-4 text-[10px] font-bold uppercase tracking-widest text-outline dark:text-outline" data-testid="backup-count">
+          {backups.length} backup{backups.length !== 1 ? 's' : ''} &middot; {formatBytes(totalSize)} total
         </p>
       )}
 

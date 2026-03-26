@@ -59,8 +59,8 @@ describe('LoginForm', () => {
   it('renders heading and subtext', () => {
     renderLoginForm();
 
-    expect(screen.getByText('Zerobase Admin')).toBeInTheDocument();
-    expect(screen.getByText('Sign in to your superuser account')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Sign In' })).toBeInTheDocument();
+    expect(screen.getByText('Zerobase Admin Console')).toBeInTheDocument();
   });
 
   it('shows validation errors when submitting empty form', async () => {
@@ -205,7 +205,7 @@ describe('LoginForm', () => {
     await user.click(screen.getByRole('button', { name: 'Sign In' }));
 
     // Button should show loading text
-    expect(screen.getByText('Signing in...')).toBeInTheDocument();
+    expect(screen.getByText('Signing In...')).toBeInTheDocument();
     expect(screen.getByRole('button')).toBeDisabled();
 
     // Inputs should be disabled

@@ -26,6 +26,14 @@ function renderToggle() {
   );
 }
 
+/** Click the trigger button to open the dropdown, then click an option by name. */
+async function selectThemeOption(user: ReturnType<typeof userEvent.setup>, name: string) {
+  const trigger = screen.getByRole('button', { name: /theme/i });
+  await user.click(trigger);
+  const option = screen.getByRole('option', { name: new RegExp(name, 'i') });
+  await user.click(option.querySelector('button')!);
+}
+
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 describe('ThemeToggle', () => {
@@ -35,19 +43,26 @@ describe('ThemeToggle', () => {
     setupMatchMedia(false);
   });
 
-  it('renders the icon button and select dropdown', () => {
+  it('renders the trigger button with theme label', () => {
     renderToggle();
 
-    expect(screen.getByRole('button', { name: /theme/i })).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: /select theme/i })).toBeInTheDocument();
+    const trigger = screen.getByRole('button', { name: /theme/i });
+    expect(trigger).toBeInTheDocument();
+    expect(trigger).toHaveAttribute('aria-haspopup', 'listbox');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('shows Light, Dark, and System options in select', () => {
+  it('shows Light, Dark, and System options when opened', async () => {
+    const user = userEvent.setup();
     renderToggle();
 
-    const select = screen.getByRole('combobox', { name: /select theme/i });
-    const options = select.querySelectorAll('option');
+    const trigger = screen.getByRole('button', { name: /theme/i });
+    await user.click(trigger);
 
+    const listbox = screen.getByRole('listbox', { name: /select theme/i });
+    expect(listbox).toBeInTheDocument();
+
+    const options = screen.getAllByRole('option');
     expect(options).toHaveLength(3);
     expect(options[0]).toHaveTextContent('Light');
     expect(options[1]).toHaveTextContent('Dark');
@@ -57,18 +72,17 @@ describe('ThemeToggle', () => {
   it('defaults to system theme', () => {
     renderToggle();
 
-    const select = screen.getByRole('combobox', { name: /select theme/i }) as HTMLSelectElement;
-    expect(select.value).toBe('system');
+    const trigger = screen.getByRole('button', { name: /theme:.*system/i });
+    expect(trigger).toBeInTheDocument();
   });
 
   it('switches to dark when selecting dark from dropdown', async () => {
     const user = userEvent.setup();
     renderToggle();
 
-    const select = screen.getByRole('combobox', { name: /select theme/i });
-    await user.selectOptions(select, 'dark');
+    await selectThemeOption(user, 'dark');
 
-    expect((select as HTMLSelectElement).value).toBe('dark');
+    expect(screen.getByRole('button', { name: /theme:.*dark/i })).toBeInTheDocument();
     expect(document.documentElement.classList.contains('dark')).toBe(true);
     expect(localStorage.getItem('zerobase-theme')).toBe('dark');
   });
@@ -79,47 +93,43 @@ describe('ThemeToggle', () => {
 
     renderToggle();
 
-    const select = screen.getByRole('combobox', { name: /select theme/i });
-    await user.selectOptions(select, 'light');
+    await selectThemeOption(user, 'light');
 
-    expect((select as HTMLSelectElement).value).toBe('light');
+    expect(screen.getByRole('button', { name: /theme:.*light/i })).toBeInTheDocument();
     expect(document.documentElement.classList.contains('dark')).toBe(false);
     expect(localStorage.getItem('zerobase-theme')).toBe('light');
   });
 
-  it('cycles theme when clicking the icon button', async () => {
+  it('closes dropdown after selecting an option', async () => {
     const user = userEvent.setup();
     renderToggle();
 
-    const button = screen.getByRole('button', { name: /theme/i });
-    const select = screen.getByRole('combobox', { name: /select theme/i }) as HTMLSelectElement;
+    const trigger = screen.getByRole('button', { name: /theme/i });
+    await user.click(trigger);
 
-    // Default is system → clicking should go to next (light)
-    // system -> light -> dark -> system
-    await user.click(button);
-    expect(select.value).toBe('light');
+    // Listbox should be visible
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
 
-    await user.click(button);
-    expect(select.value).toBe('dark');
-    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    // Select an option
+    const darkOption = screen.getByRole('option', { name: /dark/i });
+    await user.click(darkOption.querySelector('button')!);
 
-    await user.click(button);
-    expect(select.value).toBe('system');
+    // Listbox should be closed
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('persists preference after selecting from dropdown', async () => {
     const user = userEvent.setup();
     renderToggle();
 
-    const select = screen.getByRole('combobox', { name: /select theme/i });
-    await user.selectOptions(select, 'dark');
-
+    await selectThemeOption(user, 'dark');
     expect(localStorage.getItem('zerobase-theme')).toBe('dark');
 
-    await user.selectOptions(select, 'light');
+    await selectThemeOption(user, 'light');
     expect(localStorage.getItem('zerobase-theme')).toBe('light');
 
-    await user.selectOptions(select, 'system');
+    await selectThemeOption(user, 'system');
     expect(localStorage.getItem('zerobase-theme')).toBe('system');
   });
 });

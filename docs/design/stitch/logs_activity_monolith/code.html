@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "tertiary-fixed": "#5e5e5e",
+              "tertiary-fixed-dim": "#474747",
+              "surface-container": "#eeeeee",
+              "primary-fixed-dim": "#474747",
+              "on-primary-fixed": "#ffffff",
+              "on-primary": "#e2e2e2",
+              "secondary-fixed": "#c6c6c6",
+              "primary-container": "#3b3b3b",
+              "on-primary-container": "#ffffff",
+              "tertiary-container": "#747474",
+              "tertiary": "#3b3b3b",
+              "on-tertiary-fixed": "#ffffff",
+              "on-surface-variant": "#474747",
+              "outline-variant": "#c6c6c6",
+              "on-error-container": "#410002",
+              "on-tertiary-container": "#ffffff",
+              "secondary": "#5e5e5e",
+              "on-tertiary-fixed-variant": "#e2e2e2",
+              "on-secondary": "#ffffff",
+              "error": "#ba1a1a",
+              "surface-container-low": "#f3f3f4",
+              "inverse-on-surface": "#f0f1f1",
+              "secondary-container": "#d4d4d4",
+              "primary": "#000000",
+              "surface-dim": "#dadada",
+              "on-background": "#1a1c1c",
+              "on-secondary-fixed": "#1b1b1b",
+              "inverse-primary": "#c6c6c6",
+              "on-primary-fixed-variant": "#e2e2e2",
+              "on-secondary-fixed-variant": "#3b3b3b",
+              "surface-container-highest": "#e2e2e2",
+              "background": "#f9f9f9",
+              "surface-tint": "#5e5e5e",
+              "surface-bright": "#f9f9f9",
+              "surface": "#f9f9f9",
+              "outline": "#777777",
+              "on-secondary-container": "#1b1b1b",
+              "inverse-surface": "#2f3131",
+              "on-tertiary": "#e2e2e2",
+              "surface-container-lowest": "#ffffff",
+              "on-error": "#ffffff",
+              "error-container": "#ffdad6",
+              "on-surface": "#1a1c1c",
+              "surface-variant": "#e2e2e2",
+              "surface-container-high": "#e8e8e8",
+              "primary-fixed": "#5e5e5e",
+              "secondary-fixed-dim": "#ababab"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0px", "lg": "0px", "xl": "0px", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-white text-black antialiased">
+<!-- SideNavBar Shell -->
+<aside class="fixed left-0 top-0 h-full flex flex-col h-screen w-64 border-r border-black dark:border-white rounded-none bg-white dark:bg-black z-50">
+<div class="p-8">
+<h1 class="text-lg font-black tracking-tighter text-black dark:text-white">BACKEND_ENGINE</h1>
+<p class="font-['Inter'] uppercase tracking-widest text-[10px] font-bold text-zinc-500 mt-1">V2.0.4_STABLE</p>
+</div>
+<nav class="flex-1 px-4 space-y-1">
+<a class="flex items-center px-4 py-3 font-['Inter'] uppercase tracking-widest text-[12px] font-bold text-zinc-500 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-none" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="dashboard">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center px-4 py-3 font-['Inter'] uppercase tracking-widest text-[12px] font-bold text-zinc-500 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-none" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="database">database</span>
+                Collections
+            </a>
+<a class="flex items-center px-4 py-3 font-['Inter'] uppercase tracking-widest text-[12px] font-bold bg-black text-white dark:bg-white dark:text-black border-l-4 border-black dark:border-white transition-none" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="terminal">terminal</span>
+                Logs
+            </a>
+<a class="flex items-center px-4 py-3 font-['Inter'] uppercase tracking-widest text-[12px] font-bold text-zinc-500 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-none" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="settings">settings</span>
+                Settings
+            </a>
+<a class="flex items-center px-4 py-3 font-['Inter'] uppercase tracking-widest text-[12px] font-bold text-zinc-500 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-none" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="settings_backup_restore">settings_backup_restore</span>
+                Backups
+            </a>
+</nav>
+<div class="p-6 border-t border-black dark:border-white">
+<button class="w-full bg-black text-white dark:bg-white dark:text-black py-3 font-['Inter'] uppercase tracking-widest text-[12px] font-bold transition-none active:scale-[0.98]">
+                New Record
+            </button>
+</div>
+</aside>
+<!-- TopNavBar Shell -->
+<header class="flex items-center justify-between px-8 ml-64 w-[calc(100%-16rem)] w-full h-16 border-b border-black dark:border-white rounded-none bg-white dark:bg-black fixed top-0 z-40">
+<div class="flex items-center space-x-6">
+<span class="font-['Inter'] text-sm font-medium text-black dark:text-white">System Status: Active</span>
+<div class="h-4 w-[1px] bg-zinc-300"></div>
+<nav class="flex space-x-6">
+<a class="font-['Inter'] text-sm font-medium text-zinc-500 hover:text-black transition-none" href="#">Docs</a>
+<a class="font-['Inter'] text-sm font-medium text-zinc-500 hover:text-black transition-none" href="#">API</a>
+<a class="font-['Inter'] text-sm font-medium text-zinc-500 hover:text-black transition-none" href="#">Support</a>
+</nav>
+</div>
+<div class="flex items-center space-x-4">
+<div class="relative">
+<input class="border border-black bg-transparent px-4 py-1 text-xs focus:ring-0 focus:outline-none w-48 font-medium" placeholder="Search Logs..." type="text"/>
+</div>
+<button class="material-symbols-outlined text-black" data-icon="notifications">notifications</button>
+<button class="material-symbols-outlined text-black" data-icon="account_circle">account_circle</button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="ml-64 pt-16 min-h-screen bg-white">
+<!-- System Health Metrics Bar -->
+<section class="grid grid-cols-1 md:grid-cols-4 border-b border-black">
+<div class="p-8 border-r border-black flex flex-col justify-center">
+<p class="font-['Inter'] uppercase tracking-widest text-[10px] font-bold text-zinc-500 mb-2">Total Requests (24h)</p>
+<p class="text-4xl font-extrabold tracking-tighter">1,284,902</p>
+<div class="mt-4 flex items-center text-[10px] font-bold text-green-600">
+<span class="material-symbols-outlined text-sm mr-1" data-icon="trending_up">trending_up</span>
+                    +12.4% FROM YESTERDAY
+                </div>
+</div>
+<div class="p-8 border-r border-black flex flex-col justify-center">
+<p class="font-['Inter'] uppercase tracking-widest text-[10px] font-bold text-zinc-500 mb-2">Average Latency</p>
+<p class="text-4xl font-extrabold tracking-tighter">42ms</p>
+<div class="mt-4 flex items-center text-[10px] font-bold text-zinc-400">
+<span class="material-symbols-outlined text-sm mr-1" data-icon="check_circle">check_circle</span>
+                    WITHIN SLA THRESHOLD
+                </div>
+</div>
+<div class="p-8 border-r border-black flex flex-col justify-center">
+<p class="font-['Inter'] uppercase tracking-widest text-[10px] font-bold text-zinc-500 mb-2">Error Rate</p>
+<p class="text-4xl font-extrabold tracking-tighter">0.04%</p>
+<div class="mt-4 flex items-center text-[10px] font-bold text-zinc-400">
+<span class="material-symbols-outlined text-sm mr-1" data-icon="query_stats">query_stats</span>
+                    482 TOTAL ERRORS
+                </div>
+</div>
+<div class="p-8 flex flex-col justify-center bg-zinc-50">
+<p class="font-['Inter'] uppercase tracking-widest text-[10px] font-bold text-zinc-500 mb-2">Node Status</p>
+<div class="flex items-center space-x-2">
+<div class="h-3 w-3 bg-green-500"></div>
+<p class="text-lg font-bold">OPERATIONAL</p>
+</div>
+<p class="text-[10px] text-zinc-400 mt-2 font-mono">ID: cluster-us-east-01</p>
+</div>
+</section>
+<!-- Filter & Search Bar -->
+<section class="p-8 flex items-center justify-between border-b border-black">
+<div class="flex items-center space-x-8">
+<div class="flex items-center space-x-4">
+<span class="font-['Inter'] uppercase tracking-widest text-[10px] font-bold">Status:</span>
+<div class="flex border border-black overflow-hidden">
+<button class="px-3 py-1 text-[10px] font-bold bg-black text-white">ALL</button>
+<button class="px-3 py-1 text-[10px] font-bold hover:bg-zinc-100 border-l border-black">2XX</button>
+<button class="px-3 py-1 text-[10px] font-bold hover:bg-zinc-100 border-l border-black">4XX</button>
+<button class="px-3 py-1 text-[10px] font-bold hover:bg-zinc-100 border-l border-black">5XX</button>
+</div>
+</div>
+<div class="flex items-center space-x-4">
+<span class="font-['Inter'] uppercase tracking-widest text-[10px] font-bold">Method:</span>
+<select class="border border-black bg-white px-3 py-1 text-[10px] font-bold focus:ring-0 focus:outline-none appearance-none pr-8 relative">
+<option>ALL METHODS</option>
+<option>GET</option>
+<option>POST</option>
+<option>PATCH</option>
+<option>DELETE</option>
+</select>
+</div>
+</div>
+<div class="flex items-center space-x-4 w-96">
+<span class="font-['Inter'] uppercase tracking-widest text-[10px] font-bold">Filter Path:</span>
+<input class="flex-1 border border-black bg-white px-4 py-1 text-xs font-medium focus:ring-0 focus:outline-none" placeholder="/api/collections/..." type="text"/>
+</div>
+</section>
+<!-- Logs Table -->
+<section class="p-8">
+<div class="border border-black">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-zinc-100 border-b border-black">
+<th class="p-4 font-['Inter'] uppercase tracking-widest text-[10px] font-bold border-r border-black">Timestamp</th>
+<th class="p-4 font-['Inter'] uppercase tracking-widest text-[10px] font-bold border-r border-black">Method</th>
+<th class="p-4 font-['Inter'] uppercase tracking-widest text-[10px] font-bold border-r border-black w-24">Status</th>
+<th class="p-4 font-['Inter'] uppercase tracking-widest text-[10px] font-bold border-r border-black">Path</th>
+<th class="p-4 font-['Inter'] uppercase tracking-widest text-[10px] font-bold border-r border-black">IP Address</th>
+<th class="p-4 font-['Inter'] uppercase tracking-widest text-[10px] font-bold">Latency</th>
+</tr>
+</thead>
+<tbody class="font-mono text-[12px]">
+<tr class="border-b border-black hover:bg-zinc-50">
+<td class="p-4 border-r border-black">2023-10-24 14:22:01.034</td>
+<td class="p-4 border-r border-black font-bold">GET</td>
+<td class="p-4 border-r border-black"><span class="bg-green-100 text-green-800 px-2 py-0.5 font-bold">200</span></td>
+<td class="p-4 border-r border-black text-zinc-600">/api/collections/posts/records</td>
+<td class="p-4 border-r border-black">192.168.1.42</td>
+<td class="p-4 font-bold">12ms</td>
+</tr>
+<tr class="border-b border-black hover:bg-zinc-50">
+<td class="p-4 border-r border-black">2023-10-24 14:21:58.892</td>
+<td class="p-4 border-r border-black font-bold">POST</td>
+<td class="p-4 border-r border-black"><span class="bg-green-100 text-green-800 px-2 py-0.5 font-bold">201</span></td>
+<td class="p-4 border-r border-black text-zinc-600">/api/collections/users/auth-with-password</td>
+<td class="p-4 border-r border-black">45.22.102.11</td>
+<td class="p-4 font-bold">156ms</td>
+</tr>
+<tr class="border-b border-black hover:bg-zinc-50 bg-red-50/30">
+<td class="p-4 border-r border-black">2023-10-24 14:21:55.120</td>
+<td class="p-4 border-r border-black font-bold">GET</td>
+<td class="p-4 border-r border-black"><span class="bg-red-100 text-red-800 px-2 py-0.5 font-bold">404</span></td>
+<td class="p-4 border-r border-black text-zinc-600">/api/collections/settings/schema/undefined</td>
+<td class="p-4 border-r border-black">88.12.99.231</td>
+<td class="p-4 font-bold">8ms</td>
+</tr>
+<tr class="border-b border-black hover:bg-zinc-50">
+<td class="p-4 border-r border-black">2023-10-24 14:21:52.441</td>
+<td class="p-4 border-r border-black font-bold">PATCH</td>
+<td class="p-4 border-r border-black"><span class="bg-green-100 text-green-800 px-2 py-0.5 font-bold">200</span></td>
+<td class="p-4 border-r border-black text-zinc-600">/api/collections/posts/records/x8j2kd9</td>
+<td class="p-4 border-r border-black">192.168.1.42</td>
+<td class="p-4 font-bold">45ms</td>
+</tr>
+<tr class="border-b border-black hover:bg-zinc-50 bg-red-50/50">
+<td class="p-4 border-r border-black">2023-10-24 14:21:49.002</td>
+<td class="p-4 border-r border-black font-bold">POST</td>
+<td class="p-4 border-r border-black"><span class="bg-red-600 text-white px-2 py-0.5 font-bold">500</span></td>
+<td class="p-4 border-r border-black text-zinc-600">/api/files/upload/batch</td>
+<td class="p-4 border-r border-black">104.18.2.110</td>
+<td class="p-4 font-bold">2401ms</td>
+</tr>
+<tr class="border-b border-black hover:bg-zinc-50">
+<td class="p-4 border-r border-black">2023-10-24 14:21:45.667</td>
+<td class="p-4 border-r border-black font-bold">GET</td>
+<td class="p-4 border-r border-black"><span class="bg-green-100 text-green-800 px-2 py-0.5 font-bold">200</span></td>
+<td class="p-4 border-r border-black text-zinc-600">/api/collections/posts/records</td>
+<td class="p-4 border-r border-black">172.16.0.5</td>
+<td class="p-4 font-bold">18ms</td>
+</tr>
+<tr class="border-b border-black hover:bg-zinc-50">
+<td class="p-4 border-r border-black">2023-10-24 14:21:42.331</td>
+<td class="p-4 border-r border-black font-bold">GET</td>
+<td class="p-4 border-r border-black"><span class="bg-green-100 text-green-800 px-2 py-0.5 font-bold">200</span></td>
+<td class="p-4 border-r border-black text-zinc-600">/api/health</td>
+<td class="p-4 border-r border-black">127.0.0.1</td>
+<td class="p-4 font-bold">2ms</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="mt-8 flex items-center justify-between">
+<p class="font-['Inter'] uppercase tracking-widest text-[10px] font-bold text-zinc-500">Showing 1-50 of 12,842 requests</p>
+<div class="flex border border-black overflow-hidden">
+<button class="px-4 py-2 text-[10px] font-bold border-r border-black hover:bg-zinc-100"><span class="material-symbols-outlined text-sm">chevron_left</span></button>
+<button class="px-4 py-2 text-[10px] font-bold bg-black text-white border-r border-black">1</button>
+<button class="px-4 py-2 text-[10px] font-bold border-r border-black hover:bg-zinc-100">2</button>
+<button class="px-4 py-2 text-[10px] font-bold border-r border-black hover:bg-zinc-100">3</button>
+<button class="px-4 py-2 text-[10px] font-bold border-r border-black hover:bg-zinc-100">...</button>
+<button class="px-4 py-2 text-[10px] font-bold border-r border-black hover:bg-zinc-100">256</button>
+<button class="px-4 py-2 text-[10px] font-bold hover:bg-zinc-100"><span class="material-symbols-outlined text-sm">chevron_right</span></button>
+</div>
+</div>
+</section>
+<!-- Technical Details Inset -->
+<section class="p-8 mt-4 grid grid-cols-1 md:grid-cols-2 gap-8">
+<div class="border border-black p-6">
+<h3 class="font-['Inter'] uppercase tracking-widest text-[12px] font-bold mb-6 border-b border-black pb-2">Recent Errors Topology</h3>
+<div class="space-y-4">
+<div class="flex justify-between items-end">
+<span class="font-mono text-[10px] text-zinc-500">DATABASE_TIMEOUT</span>
+<div class="flex-1 mx-4 h-[1px] bg-zinc-200 mb-1.5"></div>
+<span class="font-bold text-sm">12</span>
+</div>
+<div class="flex justify-between items-end">
+<span class="font-mono text-[10px] text-zinc-500">AUTH_TOKEN_EXPIRED</span>
+<div class="flex-1 mx-4 h-[1px] bg-zinc-200 mb-1.5"></div>
+<span class="font-bold text-sm">84</span>
+</div>
+<div class="flex justify-between items-end">
+<span class="font-mono text-[10px] text-zinc-500">COLLECTION_NOT_FOUND</span>
+<div class="flex-1 mx-4 h-[1px] bg-zinc-200 mb-1.5"></div>
+<span class="font-bold text-sm">08</span>
+</div>
+<div class="flex justify-between items-end">
+<span class="font-mono text-[10px] text-zinc-500">STORAGE_QUOTA_EXCEEDED</span>
+<div class="flex-1 mx-4 h-[1px] bg-zinc-200 mb-1.5"></div>
+<span class="font-bold text-sm">01</span>
+</div>
+</div>
+</div>
+<div class="border border-black p-6 bg-black text-white">
+<h3 class="font-['Inter'] uppercase tracking-widest text-[12px] font-bold mb-6 border-b border-zinc-800 pb-2">Node Environment</h3>
+<div class="grid grid-cols-2 gap-4 font-mono text-[11px]">
+<div>
+<p class="text-zinc-500 uppercase">OS</p>
+<p>LINUX_X64_UBUNTU</p>
+</div>
+<div>
+<p class="text-zinc-500 uppercase">RUNTIME</p>
+<p>NODE_V20.8.1</p>
+</div>
+<div>
+<p class="text-zinc-500 uppercase">MEMORY_USAGE</p>
+<p>1.2GB / 4.0GB</p>
+</div>
+<div>
+<p class="text-zinc-500 uppercase">UPTIME</p>
+<p>14D : 02H : 11M</p>
+</div>
+</div>
+<div class="mt-8 pt-4 border-t border-zinc-800">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-bold tracking-widest text-zinc-500">SSL CERTIFICATE</span>
+<span class="text-[10px] font-bold text-green-400">VALID (EXP. 84 DAYS)</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- FAB Suppression Rule Active: No FAB on Log/Details screen -->
+</body></html>

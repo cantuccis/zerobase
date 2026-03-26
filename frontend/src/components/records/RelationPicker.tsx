@@ -49,10 +49,10 @@ export interface RelationPickerProps {
 const DEFAULT_DEBOUNCE_MS = 250;
 
 const inputClasses =
-  'w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus-visible:outline-none focus-visible:ring-1 focus:ring-blue-500';
+  'w-full border border-primary dark:border-on-primary bg-surface dark:bg-surface px-3 py-2 text-sm text-on-surface dark:text-on-surface placeholder-secondary dark:placeholder-secondary focus:border-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary';
 
 const errorInputClasses =
-  'w-full rounded-md border border-red-300 dark:border-red-700 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:border-red-500 focus-visible:outline-none focus-visible:ring-1 focus:ring-red-500';
+  'w-full border border-error dark:border-error bg-surface dark:bg-surface px-3 py-2 text-sm text-on-surface dark:text-on-surface placeholder-secondary dark:placeholder-secondary focus:border-error focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-error';
 
 // ── Component ────────────────────────────────────────────────────────────────
 
@@ -283,8 +283,8 @@ export function RelationPicker({
   return (
     <div ref={containerRef} className="space-y-1.5" data-testid={`relation-picker-${name}`}>
       {/* Collection label */}
-      <p className="text-xs text-gray-400 dark:text-gray-500">
-        Related to: <span className="font-medium" data-testid={`relation-collection-${name}`}>{collectionName}</span>
+      <p className="text-xs text-secondary dark:text-secondary">
+        Related to: <span className="font-medium text-on-surface dark:text-on-surface" data-testid={`relation-collection-${name}`}>{collectionName}</span>
       </p>
 
       {/* Selected items (multi-select mode) */}
@@ -296,7 +296,7 @@ export function RelationPicker({
               <span
                 key={id}
                 role="listitem"
-                className="inline-flex items-center gap-1 rounded-md bg-blue-50 dark:bg-blue-900/30 px-2 py-1 text-xs text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
+                className="inline-flex items-center gap-1 border border-primary dark:border-on-primary bg-surface dark:bg-surface px-2 py-1 text-xs text-on-surface dark:text-on-surface"
                 data-testid={`relation-chip-${id}`}
               >
                 <span className="max-w-[180px] truncate" title={label !== id ? `${label} (${id})` : id}>
@@ -305,7 +305,7 @@ export function RelationPicker({
                 <button
                   type="button"
                   onClick={() => removeOption(id)}
-                  className="ml-0.5 rounded-sm text-blue-400 dark:text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-800 hover:text-blue-600 dark:hover:text-blue-400 focus-visible:outline-none focus-visible:ring-1 focus:ring-blue-400"
+                  className="ml-0.5 text-secondary dark:text-secondary hover:bg-surface-container-low dark:hover:bg-surface-container-low hover:text-on-surface dark:hover:text-on-surface focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
                   aria-label={`Remove ${label}`}
                   data-testid={`relation-remove-${id}`}
                 >
@@ -322,7 +322,7 @@ export function RelationPicker({
       {/* Single-select display */}
       {!multiple && value.length === 1 && (
         <div className="flex items-center gap-2" data-testid={`relation-single-display-${name}`}>
-          <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1 text-sm text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
+          <span className="inline-flex items-center gap-1 border border-primary dark:border-on-primary bg-surface dark:bg-surface px-2.5 py-1 text-sm text-on-surface dark:text-on-surface">
             <span className="max-w-[240px] truncate" title={getLabelForId(value[0])}>
               {getLabelForId(value[0]) !== value[0] ? getLabelForId(value[0]) : <span className="font-mono text-xs">{value[0]}</span>}
             </span>
@@ -330,7 +330,7 @@ export function RelationPicker({
           <button
             type="button"
             onClick={clearAll}
-            className="text-xs text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+            className="text-xs text-secondary dark:text-secondary hover:text-error dark:hover:text-error"
             data-testid={`relation-clear-${name}`}
           >
             Clear
@@ -367,17 +367,17 @@ export function RelationPicker({
               id={listboxId}
               role="listbox"
               aria-label={`${collectionName} records`}
-              className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-1 shadow-lg"
+              className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto border border-primary dark:border-on-primary bg-surface dark:bg-surface py-1 animate-slide-down-in"
               data-testid={`relation-dropdown-${name}`}
             >
               {loading && filteredResults.length === 0 && (
-                <li className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400" role="presentation" data-testid={`relation-loading-${name}`}>
+                <li className="px-3 py-2 text-sm text-secondary dark:text-secondary" role="presentation" data-testid={`relation-loading-${name}`}>
                   Searching\u2026
                 </li>
               )}
 
               {!loading && filteredResults.length === 0 && (
-                <li className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400" role="presentation" data-testid={`relation-empty-${name}`}>
+                <li className="px-3 py-2 text-sm text-secondary dark:text-secondary" role="presentation" data-testid={`relation-empty-${name}`}>
                   {query.trim() ? 'No matching records found.' : 'Type to search records\u2026'}
                 </li>
               )}
@@ -391,8 +391,8 @@ export function RelationPicker({
                     id={`relation-option-${name}-${option.id}`}
                     role="option"
                     aria-selected={isAlreadySelected}
-                    className={`cursor-pointer px-3 py-2 text-sm transition-colors ${
-                      isActive ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    className={`cursor-pointer px-3 py-2 text-sm ${
+                      isActive ? 'bg-primary dark:bg-on-primary text-on-primary dark:text-primary' : 'text-on-surface dark:text-on-surface hover:bg-surface-container-low dark:hover:bg-surface-container-low'
                     }`}
                     onClick={() => selectOption(option.id)}
                     onMouseEnter={() => setActiveIndex(index)}
@@ -402,7 +402,7 @@ export function RelationPicker({
                       {option.label !== option.id ? (
                         <>
                           <span>{option.label}</span>
-                          <span className="ml-2 font-mono text-xs text-gray-400 dark:text-gray-500">{option.id}</span>
+                          <span className="ml-2 font-mono text-xs text-secondary dark:text-secondary">{option.id}</span>
                         </>
                       ) : (
                         <span className="font-mono text-xs">{option.id}</span>
@@ -413,7 +413,7 @@ export function RelationPicker({
               })}
 
               {loading && filteredResults.length > 0 && (
-                <li className="px-3 py-1.5 text-xs text-gray-400 dark:text-gray-500" role="presentation">
+                <li className="px-3 py-1.5 text-xs text-secondary dark:text-secondary" role="presentation">
                   Loading more\u2026
                 </li>
               )}

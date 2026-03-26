@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { DashboardLayout } from '../DashboardLayout';
 import { client } from '../../lib/auth/client';
 import { ApiError } from '../../lib/api';
@@ -15,9 +15,9 @@ import type {
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const WEBHOOK_EVENTS: { value: WebhookEvent; label: string }[] = [
-  { value: 'create', label: 'Create' },
-  { value: 'update', label: 'Update' },
-  { value: 'delete', label: 'Delete' },
+  { value: 'create', label: 'CREATE' },
+  { value: 'update', label: 'UPDATE' },
+  { value: 'delete', label: 'DELETE' },
 ];
 
 const DELIVERIES_PER_PAGE = 20;
@@ -40,32 +40,6 @@ function formatTimestamp(iso: string): string {
   }
 }
 
-function deliveryStatusBadgeClass(status: string): string {
-  switch (status) {
-    case 'success':
-      return 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300';
-    case 'failed':
-      return 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300';
-    case 'pending':
-      return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300';
-    default:
-      return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
-  }
-}
-
-function eventBadgeClass(event: string): string {
-  switch (event) {
-    case 'create':
-      return 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400';
-    case 'update':
-      return 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400';
-    case 'delete':
-      return 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400';
-    default:
-      return 'bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300';
-  }
-}
-
 // ── Webhook Form Modal ───────────────────────────────────────────────────────
 
 interface WebhookFormProps {
@@ -85,6 +59,34 @@ function WebhookFormModal({ webhook, collections, onSave, onClose, saving, error
   const [events, setEvents] = useState<WebhookEvent[]>(webhook?.events ?? ['create']);
   const [secret, setSecret] = useState('');
   const [enabled, setEnabled] = useState(webhook?.enabled ?? true);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const firstFocusable = dialogRef.current?.querySelector<HTMLElement>('button, a, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    firstFocusable?.focus();
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll<HTMLElement>('button, a, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   function toggleEvent(event: WebhookEvent) {
     setEvents((prev) =>
@@ -106,42 +108,42 @@ function WebhookFormModal({ webhook, collections, onSave, onClose, saving, error
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" role="dialog" aria-modal="true" aria-label={isEdit ? 'Edit webhook' : 'Add webhook'}>
-      <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
+    <div ref={dialogRef} className="fixed inset-0 z-50 flex items-center justify-center bg-primary/30 dark:bg-on-primary/30 animate-fade-in" role="dialog" aria-modal="true" aria-label={isEdit ? 'Edit webhook' : 'Add webhook'}>
+      <div className="w-full max-w-lg border border-primary dark:border-on-primary bg-surface-lowest dark:bg-surface-container p-6 animate-scale-in">
+        <h2 className="mb-6 text-title-md text-on-surface dark:text-on-surface">
           {isEdit ? 'Edit Webhook' : 'Add Webhook'}
         </h2>
 
         {error && (
-          <div className="mb-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-300" role="alert">
+          <div className="mb-4 border border-error bg-error-container dark:bg-error/10 px-4 py-3 text-sm text-on-error-container dark:text-error" role="alert">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {/* Collection (only on create) */}
           {!isEdit && (
             <div>
-              <label htmlFor="webhook-collection" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="webhook-collection" className="text-label-md block mb-2 text-on-surface dark:text-on-surface">
                 Collection
               </label>
               <select
                 id="webhook-collection"
                 value={collection}
                 onChange={(e) => setCollection(e.target.value)}
-                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                className="w-full border border-primary dark:border-on-primary bg-surface-lowest dark:bg-surface-lowest px-4 py-3 text-sm text-on-surface dark:text-on-surface focus:border-2 focus:px-[15px] focus:py-[11px] outline-none"
               >
                 {collections.map((c) => (
                   <option key={c.id} value={c.name}>{c.name}</option>
                 ))}
               </select>
-              {fieldErrors.collection && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{fieldErrors.collection}</p>}
+              {fieldErrors.collection && <p className="mt-1 text-sm text-error">{fieldErrors.collection}</p>}
             </div>
           )}
 
           {/* URL */}
           <div>
-            <label htmlFor="webhook-url" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="webhook-url" className="text-label-md block mb-2 text-on-surface dark:text-on-surface">
               URL
             </label>
             <input
@@ -151,34 +153,41 @@ function WebhookFormModal({ webhook, collections, onSave, onClose, saving, error
               onChange={(e) => setUrl(e.target.value)}
               required
               placeholder="https://example.com/webhook"
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+              className="w-full border border-primary dark:border-on-primary bg-surface-lowest dark:bg-surface-lowest px-4 py-3 text-sm font-data text-on-surface dark:text-on-surface placeholder:text-outline focus:border-2 focus:px-[15px] focus:py-[11px] outline-none"
             />
-            {fieldErrors.url && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{fieldErrors.url}</p>}
+            {fieldErrors.url && <p className="mt-1 text-sm text-error">{fieldErrors.url}</p>}
           </div>
 
           {/* Events */}
           <fieldset>
-            <legend className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Events</legend>
-            <div className="flex gap-4">
-              {WEBHOOK_EVENTS.map(({ value, label }) => (
-                <label key={value} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={events.includes(value)}
-                    onChange={() => toggleEvent(value)}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                  />
-                  {label}
-                </label>
-              ))}
+            <legend className="text-label-md block mb-3 text-on-surface dark:text-on-surface">Events</legend>
+            <div className="flex gap-0">
+              {WEBHOOK_EVENTS.map(({ value, label }) => {
+                const checked = events.includes(value);
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => toggleEvent(value)}
+                    className={`border border-primary dark:border-on-primary -ml-px first:ml-0 px-4 py-2 text-label-sm cursor-pointer ${
+                      checked
+                        ? 'bg-primary dark:bg-on-primary text-on-primary dark:text-primary'
+                        : 'bg-surface-lowest dark:bg-surface-lowest text-on-surface dark:text-on-surface hover:bg-surface-container dark:hover:bg-surface-container'
+                    }`}
+                    aria-pressed={checked}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
             </div>
-            {fieldErrors.events && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{fieldErrors.events}</p>}
+            {fieldErrors.events && <p className="mt-1 text-sm text-error">{fieldErrors.events}</p>}
           </fieldset>
 
           {/* Secret */}
           <div>
-            <label htmlFor="webhook-secret" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Secret <span className="text-gray-400">(optional)</span>
+            <label htmlFor="webhook-secret" className="text-label-md block mb-2 text-on-surface dark:text-on-surface">
+              Secret <span className="text-outline font-normal normal-case tracking-normal text-xs">(optional)</span>
             </label>
             <input
               id="webhook-secret"
@@ -187,34 +196,46 @@ function WebhookFormModal({ webhook, collections, onSave, onClose, saving, error
               onChange={(e) => setSecret(e.target.value)}
               placeholder={isEdit ? 'Leave empty to keep current' : 'HMAC-SHA256 signing secret'}
               autoComplete="off"
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+              className="w-full border border-primary dark:border-on-primary bg-surface-lowest dark:bg-surface-lowest px-4 py-3 text-sm text-on-surface dark:text-on-surface placeholder:text-outline focus:border-2 focus:px-[15px] focus:py-[11px] outline-none"
             />
           </div>
 
-          {/* Enabled */}
-          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={enabled}
-              onChange={(e) => setEnabled(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
-            />
-            Enabled
-          </label>
+          {/* Enabled toggle */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={enabled}
+              aria-label="Enable webhook"
+              onClick={() => setEnabled(!enabled)}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-surface ${
+                enabled
+                  ? 'bg-on-surface dark:bg-on-surface border-on-surface dark:border-on-surface'
+                  : 'bg-surface-container dark:bg-surface-container border-outline dark:border-outline'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-4 w-4 transform bg-surface-lowest dark:bg-surface-lowest ${
+                  enabled ? 'translate-x-[22px]' : 'translate-x-[3px]'
+                } translate-y-[3px]`}
+              />
+            </button>
+            <span className="text-sm text-on-surface dark:text-on-surface">{enabled ? 'Enabled' : 'Disabled'}</span>
+          </div>
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              className="border border-primary dark:border-on-primary bg-transparent px-4 py-2 text-label-md text-on-surface dark:text-on-surface hover:bg-primary hover:text-on-primary dark:hover:bg-on-primary dark:hover:text-primary cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving || events.length === 0}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="border border-primary dark:border-on-primary bg-primary dark:bg-on-primary px-4 py-2 text-label-md text-on-primary dark:text-primary hover:bg-transparent hover:text-on-surface dark:hover:bg-transparent dark:hover:text-on-surface disabled:opacity-50 cursor-pointer"
             >
               {saving ? 'Saving\u2026' : isEdit ? 'Update' : 'Create'}
             </button>
@@ -238,6 +259,34 @@ function DeliveryHistory({ webhookId, onClose }: DeliveryHistoryProps) {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const closeBtn = dialogRef.current?.querySelector<HTMLElement>('[aria-label="Close delivery history"]');
+    closeBtn?.focus();
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll<HTMLElement>('button, a, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const loadDeliveries = useCallback(async () => {
     setLoading(true);
@@ -261,14 +310,14 @@ function DeliveryHistory({ webhookId, onClose }: DeliveryHistoryProps) {
   }, [loadDeliveries]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" role="dialog" aria-modal="true" aria-label="Delivery history">
-      <div className="w-full max-w-3xl rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800" style={{ maxHeight: '80vh', overflow: 'auto' }}>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Delivery History</h2>
+    <div ref={dialogRef} className="fixed inset-0 z-50 flex items-center justify-center bg-primary/30 dark:bg-on-primary/30 animate-fade-in" role="dialog" aria-modal="true" aria-label="Delivery history">
+      <div className="w-full max-w-3xl border border-primary dark:border-on-primary bg-surface-lowest dark:bg-surface-container p-6 animate-slide-up" style={{ maxHeight: '80vh', overflow: 'auto' }}>
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-title-md text-on-surface dark:text-on-surface">Delivery History</h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+            className="border border-primary dark:border-on-primary p-1.5 text-on-surface dark:text-on-surface hover:bg-primary hover:text-on-primary dark:hover:bg-on-primary dark:hover:text-primary cursor-pointer"
             aria-label="Close delivery history"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -279,47 +328,59 @@ function DeliveryHistory({ webhookId, onClose }: DeliveryHistoryProps) {
         </div>
 
         {error && (
-          <div className="mb-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-300" role="alert">
+          <div className="mb-4 border border-error bg-error-container dark:bg-error/10 px-4 py-3 text-sm text-on-error-container dark:text-error" role="alert">
             {error}
           </div>
         )}
 
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" role="status" aria-label="Loading deliveries" />
+            <div className="h-6 w-6 animate-spin border-2 border-primary dark:border-on-primary border-t-transparent" role="status" aria-label="Loading deliveries" />
           </div>
         ) : deliveries.length === 0 ? (
-          <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">No delivery history yet.</p>
+          <p className="py-8 text-center text-label-md text-secondary">NO DELIVERY HISTORY</p>
         ) : (
           <>
-            <table className="w-full text-left text-sm" aria-label="Webhook delivery log">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="px-3 py-2 font-medium text-gray-600 dark:text-gray-400">Event</th>
-                  <th className="px-3 py-2 font-medium text-gray-600 dark:text-gray-400">Record</th>
-                  <th className="px-3 py-2 font-medium text-gray-600 dark:text-gray-400">Status</th>
-                  <th className="px-3 py-2 font-medium text-gray-600 dark:text-gray-400">HTTP</th>
-                  <th className="px-3 py-2 font-medium text-gray-600 dark:text-gray-400">Attempt</th>
-                  <th className="px-3 py-2 font-medium text-gray-600 dark:text-gray-400">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {deliveries.map((d) => (
-                  <tr key={d.id} className="border-b border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-700/50">
-                    <td className="px-3 py-2">
-                      <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${eventBadgeClass(d.event)}`}>{d.event}</span>
-                    </td>
-                    <td className="px-3 py-2 font-mono text-xs text-gray-600 dark:text-gray-400">{d.recordId}</td>
-                    <td className="px-3 py-2">
-                      <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${deliveryStatusBadgeClass(d.status)}`}>{d.status}</span>
-                    </td>
-                    <td className="px-3 py-2 text-gray-600 dark:text-gray-400">{d.responseStatus || '\u2014'}</td>
-                    <td className="px-3 py-2 text-gray-600 dark:text-gray-400">{d.attempt}</td>
-                    <td className="px-3 py-2 text-gray-500 dark:text-gray-400 whitespace-nowrap">{formatTimestamp(d.created)}</td>
+            <div className="border border-primary dark:border-on-primary">
+              <table className="w-full text-left text-sm" aria-label="Webhook delivery log">
+                <thead>
+                  <tr className="bg-primary dark:bg-on-primary">
+                    <th scope="col" className="px-4 py-2.5 text-label-sm text-on-primary dark:text-primary">Event</th>
+                    <th scope="col" className="px-4 py-2.5 text-label-sm text-on-primary dark:text-primary">Record</th>
+                    <th scope="col" className="px-4 py-2.5 text-label-sm text-on-primary dark:text-primary">Status</th>
+                    <th scope="col" className="px-4 py-2.5 text-label-sm text-on-primary dark:text-primary">HTTP</th>
+                    <th scope="col" className="px-4 py-2.5 text-label-sm text-on-primary dark:text-primary">Attempt</th>
+                    <th scope="col" className="px-4 py-2.5 text-label-sm text-on-primary dark:text-primary">Date</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {deliveries.map((d) => (
+                    <tr key={d.id} className="border-t border-outline-variant dark:border-outline hover:bg-surface-container-low dark:hover:bg-surface-container-low transition-colors-fast">
+                      <td className="px-4 py-2.5">
+                        <span className="inline-flex items-center border border-primary dark:border-on-primary px-2 py-0.5 text-label-sm text-on-surface dark:text-on-surface">
+                          {d.event.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 font-data text-xs text-on-surface-variant dark:text-on-surface-variant">{d.recordId}</td>
+                      <td className="px-4 py-2.5">
+                        <span className={`inline-flex items-center px-2 py-0.5 text-label-sm ${
+                          d.status === 'success'
+                            ? 'border border-primary dark:border-on-primary bg-primary dark:bg-on-primary text-on-primary dark:text-primary'
+                            : d.status === 'failed'
+                              ? 'border border-error bg-error text-on-error'
+                              : 'border border-outline dark:border-outline text-on-surface-variant dark:text-on-surface-variant'
+                        }`}>
+                          {d.status.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 font-data text-xs text-on-surface-variant dark:text-on-surface-variant">{d.responseStatus || '\u2014'}</td>
+                      <td className="px-4 py-2.5 text-on-surface-variant dark:text-on-surface-variant">{d.attempt}</td>
+                      <td className="px-4 py-2.5 font-data text-xs text-on-surface-variant dark:text-on-surface-variant whitespace-nowrap">{formatTimestamp(d.created)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             {/* Pagination */}
             {totalPages > 1 && (
@@ -328,18 +389,18 @@ function DeliveryHistory({ webhookId, onClose }: DeliveryHistoryProps) {
                   type="button"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1}
-                  className="rounded-md border border-gray-300 px-3 py-1.5 text-sm disabled:opacity-50 dark:border-gray-600 dark:text-gray-300"
+                  className="border border-primary dark:border-on-primary px-3 py-1.5 text-label-sm text-on-surface dark:text-on-surface hover:bg-primary hover:text-on-primary dark:hover:bg-on-primary dark:hover:text-primary disabled:opacity-30 cursor-pointer"
                 >
                   Previous
                 </button>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  Page {page} of {totalPages}
+                <span className="text-sm text-on-surface-variant dark:text-on-surface-variant font-data">
+                  {page} / {totalPages}
                 </span>
                 <button
                   type="button"
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages}
-                  className="rounded-md border border-gray-300 px-3 py-1.5 text-sm disabled:opacity-50 dark:border-gray-600 dark:text-gray-300"
+                  className="border border-primary dark:border-on-primary px-3 py-1.5 text-label-sm text-on-surface dark:text-on-surface hover:bg-primary hover:text-on-primary dark:hover:bg-on-primary dark:hover:text-primary disabled:opacity-30 cursor-pointer"
                 >
                   Next
                 </button>
@@ -362,18 +423,49 @@ interface DeleteConfirmProps {
 }
 
 function DeleteConfirmModal({ webhookUrl, onConfirm, onCancel, deleting }: DeleteConfirmProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const firstFocusable = dialogRef.current?.querySelector<HTMLElement>('button, a, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    firstFocusable?.focus();
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        onCancel();
+        return;
+      }
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll<HTMLElement>('button, a, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onCancel]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" role="dialog" aria-modal="true" aria-label="Confirm delete webhook">
-      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
-        <h2 className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">Delete Webhook</h2>
-        <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-          Are you sure you want to delete the webhook for <span className="font-medium text-gray-900 dark:text-gray-100">{webhookUrl}</span>? This action cannot be undone.
+    <div ref={dialogRef} className="fixed inset-0 z-50 flex items-center justify-center bg-primary/30 dark:bg-on-primary/30 animate-fade-in" role="dialog" aria-modal="true" aria-label="Confirm delete webhook">
+      <div className="w-full max-w-sm border border-primary dark:border-on-primary bg-surface-lowest dark:bg-surface-container p-6 animate-scale-in">
+        <h2 className="mb-2 text-title-md text-on-surface dark:text-on-surface">Delete Webhook</h2>
+        <p className="mb-4 text-sm text-on-surface-variant dark:text-on-surface-variant">
+          Are you sure you want to delete the webhook for{' '}
+          <span className="font-data text-on-surface dark:text-on-surface">{webhookUrl}</span>?
+          This action cannot be undone.
         </p>
         <div className="flex justify-end gap-3">
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            className="border border-primary dark:border-on-primary bg-transparent px-4 py-2 text-label-md text-on-surface dark:text-on-surface hover:bg-primary hover:text-on-primary dark:hover:bg-on-primary dark:hover:text-primary cursor-pointer"
           >
             Cancel
           </button>
@@ -381,7 +473,7 @@ function DeleteConfirmModal({ webhookUrl, onConfirm, onCancel, deleting }: Delet
             type="button"
             onClick={onConfirm}
             disabled={deleting}
-            className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+            className="border border-error bg-error px-4 py-2 text-label-md text-on-error hover:bg-transparent hover:text-error disabled:opacity-50 cursor-pointer"
           >
             {deleting ? 'Deleting\u2026' : 'Delete'}
           </button>
@@ -544,19 +636,19 @@ export function WebhooksPage() {
 
   return (
     <DashboardLayout currentPath="/_/webhooks">
-      <div className="space-y-6">
+      <div className="space-y-8">
         {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Webhooks</h1>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <h1 className="text-display-lg text-on-surface dark:text-on-surface">Webhooks</h1>
+            <p className="mt-2 text-body-lg text-on-surface-variant dark:text-on-surface-variant">
               Configure HTTP callbacks triggered by record events.
             </p>
           </div>
           <button
             type="button"
             onClick={openCreateForm}
-            className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="inline-flex items-center gap-2 border border-primary dark:border-on-primary bg-primary dark:bg-on-primary px-5 py-2.5 text-label-md text-on-primary dark:text-primary hover:bg-transparent hover:text-on-surface dark:hover:bg-transparent dark:hover:text-on-surface cursor-pointer"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <line x1="12" y1="5" x2="12" y2="19" />
@@ -568,14 +660,14 @@ export function WebhooksPage() {
 
         {/* Filter */}
         <div className="flex items-center gap-3">
-          <label htmlFor="filter-collection" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Collection:
+          <label htmlFor="filter-collection" className="text-label-md text-on-surface dark:text-on-surface">
+            Collection
           </label>
           <select
             id="filter-collection"
             value={filterCollection}
             onChange={(e) => setFilterCollection(e.target.value)}
-            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+            className="border border-primary dark:border-on-primary bg-surface-lowest dark:bg-surface-lowest px-4 py-2 text-sm text-on-surface dark:text-on-surface outline-none focus:border-2 focus:px-[15px] focus:py-[7px]"
           >
             <option value="">All collections</option>
             {collections.map((c) => (
@@ -586,9 +678,9 @@ export function WebhooksPage() {
 
         {/* Error */}
         {error && (
-          <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-300" role="alert">
+          <div className="border border-error bg-error-container dark:bg-error/10 px-4 py-3 text-sm text-on-error-container dark:text-error" role="alert">
             {error}
-            <button type="button" onClick={() => setError(null)} className="ml-2 font-medium underline" aria-label="Dismiss error">
+            <button type="button" onClick={() => setError(null)} className="ml-2 text-label-sm underline cursor-pointer" aria-label="Dismiss error">
               Dismiss
             </button>
           </div>
@@ -597,53 +689,56 @@ export function WebhooksPage() {
         {/* Loading */}
         {loading ? (
           <div className="flex justify-center py-16">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" role="status" aria-label="Loading webhooks" />
+            <div className="h-6 w-6 animate-spin border-2 border-primary dark:border-on-primary border-t-transparent" role="status" aria-label="Loading webhooks" />
           </div>
         ) : webhooks.length === 0 ? (
           /* Empty state */
-          <div className="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center dark:border-gray-600">
-            <svg className="mx-auto h-12 w-12 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <div className="border border-primary dark:border-on-primary p-12 text-center">
+            <svg className="mx-auto h-12 w-12 text-outline dark:text-outline" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M18 16.98h-5.99c-1.1 0-1.95.94-2.48 1.9A4 4 0 0 1 2 17c.01-.7.2-1.4.57-2" />
               <path d="m6 17 3.13-5.78c.53-.97.1-2.18-.5-3.1a4 4 0 1 1 6.89-4.06" />
               <path d="m12 6 3.13 5.73C15.66 12.7 16.9 13 18 13a4 4 0 0 1 0 8H12" />
             </svg>
-            <h3 className="mt-4 text-sm font-medium text-gray-900 dark:text-gray-100">No webhooks configured</h3>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Get started by adding a webhook to receive HTTP callbacks on record events.
+            <p className="mt-6 text-label-md text-secondary">NO WEBHOOKS CONFIGURED</p>
+            <p className="mt-2 text-sm text-on-surface-variant dark:text-on-surface-variant">
+              Add a webhook to receive HTTP callbacks on record events.
             </p>
             <button
               type="button"
               onClick={openCreateForm}
-              className="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              className="mt-6 inline-flex items-center gap-2 border border-primary dark:border-on-primary bg-primary dark:bg-on-primary px-5 py-2.5 text-label-md text-on-primary dark:text-primary hover:bg-transparent hover:text-on-surface dark:hover:bg-transparent dark:hover:text-on-surface cursor-pointer"
             >
               Add Webhook
             </button>
           </div>
         ) : (
           /* Webhooks table */
-          <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+          <div className="border border-primary dark:border-on-primary">
             <table className="w-full text-left text-sm" aria-label="Webhooks">
-              <thead className="bg-gray-50 dark:bg-gray-800">
-                <tr>
-                  <th className="px-4 py-3 font-medium text-gray-600 dark:text-gray-400">URL</th>
-                  <th className="px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Collection</th>
-                  <th className="px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Events</th>
-                  <th className="px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Status</th>
-                  <th className="px-4 py-3 font-medium text-gray-600 dark:text-gray-400">Actions</th>
+              <thead>
+                <tr className="bg-primary dark:bg-on-primary">
+                  <th scope="col" className="px-4 py-2.5 text-label-sm text-on-primary dark:text-primary">URL</th>
+                  <th scope="col" className="px-4 py-2.5 text-label-sm text-on-primary dark:text-primary">Collection</th>
+                  <th scope="col" className="px-4 py-2.5 text-label-sm text-on-primary dark:text-primary">Events</th>
+                  <th scope="col" className="px-4 py-2.5 text-label-sm text-on-primary dark:text-primary">Status</th>
+                  <th scope="col" className="px-4 py-2.5 text-label-sm text-on-primary dark:text-primary">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {webhooks.map((wh) => (
-                  <tr key={wh.id} className="border-t border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-700/50">
+                  <tr key={wh.id} className="border-t border-outline-variant dark:border-outline hover:bg-surface-container-low dark:hover:bg-surface-container-low transition-colors-fast">
                     <td className="px-4 py-3">
-                      <span className="font-mono text-xs text-gray-900 dark:text-gray-100 break-all">{wh.url}</span>
+                      <span className="font-data text-xs text-on-surface dark:text-on-surface break-all">{wh.url}</span>
                     </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{wh.collection}</td>
+                    <td className="px-4 py-3 text-on-surface-variant dark:text-on-surface-variant">{wh.collection}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
                         {wh.events.map((evt) => (
-                          <span key={evt} className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${eventBadgeClass(evt)}`}>
-                            {evt}
+                          <span
+                            key={evt}
+                            className="inline-flex items-center border border-primary dark:border-on-primary px-2 py-0.5 text-label-sm text-on-surface dark:text-on-surface"
+                          >
+                            {evt.toUpperCase()}
                           </span>
                         ))}
                       </div>
@@ -652,35 +747,39 @@ export function WebhooksPage() {
                       <button
                         type="button"
                         onClick={() => handleToggleEnabled(wh)}
-                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium cursor-pointer ${
+                        className={`inline-flex items-center gap-1.5 border px-2.5 py-0.5 text-label-sm cursor-pointer ${
                           wh.enabled
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
-                            : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                            ? 'border-primary dark:border-on-primary bg-primary dark:bg-on-primary text-on-primary dark:text-primary'
+                            : 'border-outline dark:border-outline bg-transparent text-on-surface-variant dark:text-on-surface-variant'
                         }`}
                         aria-label={wh.enabled ? 'Disable webhook' : 'Enable webhook'}
                       >
-                        <span className={`inline-block h-1.5 w-1.5 rounded-full ${wh.enabled ? 'bg-green-500' : 'bg-gray-400'}`} />
-                        {wh.enabled ? 'Active' : 'Disabled'}
+                        <span className={`inline-block h-1.5 w-1.5 ${
+                          wh.enabled
+                            ? 'bg-on-primary dark:bg-primary'
+                            : 'border border-outline dark:border-outline'
+                        }`} />
+                        {wh.enabled ? 'ACTIVE' : 'INACTIVE'}
                       </button>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
                         {/* Test */}
                         <button
                           type="button"
                           onClick={() => handleTest(wh)}
                           disabled={testingId === wh.id}
-                          className="rounded-md border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                          className="border border-primary dark:border-on-primary px-2.5 py-1 text-label-sm text-on-surface dark:text-on-surface hover:bg-primary hover:text-on-primary dark:hover:bg-on-primary dark:hover:text-primary disabled:opacity-30 cursor-pointer"
                           aria-label="Test webhook"
                         >
-                          {testingId === wh.id ? 'Testing\u2026' : 'Test'}
+                          {testingId === wh.id ? 'TESTING\u2026' : 'TEST'}
                         </button>
 
                         {/* Delivery history */}
                         <button
                           type="button"
                           onClick={() => setDeliveryWebhookId(wh.id)}
-                          className="rounded-md border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                          className="-ml-px border border-primary dark:border-on-primary px-2.5 py-1 text-label-sm text-on-surface dark:text-on-surface hover:bg-primary hover:text-on-primary dark:hover:bg-on-primary dark:hover:text-primary cursor-pointer"
                           aria-label="View delivery history"
                         >
                           History
@@ -690,7 +789,7 @@ export function WebhooksPage() {
                         <button
                           type="button"
                           onClick={() => openEditForm(wh)}
-                          className="rounded-md border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                          className="-ml-px border border-primary dark:border-on-primary px-2.5 py-1 text-label-sm text-on-surface dark:text-on-surface hover:bg-primary hover:text-on-primary dark:hover:bg-on-primary dark:hover:text-primary cursor-pointer"
                           aria-label="Edit webhook"
                         >
                           Edit
@@ -700,7 +799,7 @@ export function WebhooksPage() {
                         <button
                           type="button"
                           onClick={() => setDeletingWebhook(wh)}
-                          className="rounded-md border border-red-300 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/30"
+                          className="-ml-px border border-error px-2.5 py-1 text-label-sm text-error hover:bg-error hover:text-on-error cursor-pointer"
                           aria-label="Delete webhook"
                         >
                           Delete
@@ -709,7 +808,7 @@ export function WebhooksPage() {
 
                       {/* Test result inline */}
                       {testResult?.id === wh.id && (
-                        <div className={`mt-1 text-xs ${testResult.success ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`} role="status">
+                        <div className={`mt-1 font-data text-xs ${testResult.success ? 'text-on-surface dark:text-on-surface' : 'text-error'}`} role="status">
                           {testResult.message}
                         </div>
                       )}

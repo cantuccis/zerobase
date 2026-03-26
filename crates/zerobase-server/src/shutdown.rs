@@ -173,45 +173,51 @@ pub async fn serve_with_shutdown(
         let _ = signal_coordinator_tx.send(true);
     });
 
-    // Start serving with graceful shutdown.
+    // A second subscription so we know when the shutdown signal fires,
+    // independent of the one consumed by axum's graceful shutdown.
+    let drain_signal = coordinator.shutdown_signal();
+
     let shutdown_fut = coordinator.shutdown_signal();
 
     info!("server started, graceful shutdown timeout = {}s", timeout.as_secs());
 
-    // Race the server against the shutdown timeout.
-    // axum's graceful shutdown will stop accepting new connections immediately
-    // and wait for in-flight requests to complete.
     let serve_future = async {
         axum::serve(listener, app)
             .with_graceful_shutdown(shutdown_fut)
             .await
     };
+    tokio::pin!(serve_future);
 
-    // Give extra time beyond the drain timeout so the server has a chance
-    // to finish on its own before we force-kill.
-    let serve_result = tokio::time::timeout(
-        timeout + Duration::from_secs(1),
-        serve_future,
-    )
-    .await;
+    // Phase 1: serve until the server exits on its own OR a shutdown signal arrives.
+    // Phase 2 (only on signal): apply the drain timeout for in-flight requests.
+    let serve_result: Option<std::io::Result<()>> = tokio::select! {
+        result = &mut serve_future => Some(result),
+        _ = drain_signal => {
+            match tokio::time::timeout(timeout, serve_future).await {
+                Ok(result) => Some(result),
+                Err(_elapsed) => {
+                    warn!(
+                        timeout_secs = timeout.as_secs(),
+                        "shutdown timeout exceeded — forcing shutdown"
+                    );
+                    None
+                }
+            }
+        }
+    };
 
     match serve_result {
-        Ok(Ok(())) => {
+        Some(Ok(())) => {
             info!("server shut down gracefully — all in-flight requests completed");
         }
-        Ok(Err(e)) => {
+        Some(Err(e)) => {
             warn!(error = %e, "server encountered an error during shutdown");
+            coordinator.cleanup();
             return Err(e.into());
         }
-        Err(_elapsed) => {
-            warn!(
-                timeout_secs = timeout.as_secs(),
-                "shutdown timeout exceeded — forcing shutdown"
-            );
-        }
+        None => {}
     }
 
-    // Run cleanup (close DB, flush logs).
     coordinator.cleanup();
 
     Ok(())

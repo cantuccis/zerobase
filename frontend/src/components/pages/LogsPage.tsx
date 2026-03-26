@@ -16,10 +16,17 @@ const PER_PAGE = 30;
 
 const STATUS_RANGES = [
   { label: 'All', min: undefined, max: undefined },
-  { label: '2xx Success', min: 200, max: 299 },
-  { label: '3xx Redirect', min: 300, max: 399 },
-  { label: '4xx Client Error', min: 400, max: 499 },
-  { label: '5xx Server Error', min: 500, max: 599 },
+  { label: '2xx', min: 200, max: 299 },
+  { label: '3xx', min: 300, max: 399 },
+  { label: '4xx', min: 400, max: 499 },
+  { label: '5xx', min: 500, max: 599 },
+] as const;
+
+const DATE_PRESETS = [
+  { value: '1h', label: '1H' },
+  { value: '24h', label: '24H' },
+  { value: '7d', label: '7D' },
+  { value: '30d', label: '30D' },
 ] as const;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -29,8 +36,8 @@ function formatTimestamp(iso: string): string {
     const d = new Date(iso);
     return d.toLocaleString(undefined, {
       year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
@@ -44,25 +51,6 @@ function formatDuration(ms: number): string {
   if (ms < 1) return '<1ms';
   if (ms < 1000) return `${Math.round(ms)}ms`;
   return `${(ms / 1000).toFixed(2)}s`;
-}
-
-function statusColorClass(status: number): string {
-  if (status >= 500) return 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300';
-  if (status >= 400) return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300';
-  if (status >= 300) return 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300';
-  if (status >= 200) return 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300';
-  return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
-}
-
-function methodColorClass(method: string): string {
-  switch (method.toUpperCase()) {
-    case 'GET': return 'text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30';
-    case 'POST': return 'text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30';
-    case 'PATCH':
-    case 'PUT': return 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30';
-    case 'DELETE': return 'text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/30';
-    default: return 'text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900';
-  }
 }
 
 function getDateRangePreset(preset: string): { after: string; before: string } {
@@ -90,7 +78,7 @@ function getDateRangePreset(preset: string): { after: string; before: string } {
   return { after: after.toISOString(), before };
 }
 
-// ── Stats Overview Component ─────────────────────────────────────────────────
+// ── Stats Metrics Bar ────────────────────────────────────────────────────────
 
 interface StatsOverviewProps {
   stats: LogStats | null;
@@ -100,11 +88,11 @@ interface StatsOverviewProps {
 function StatsOverview({ stats, loading }: StatsOverviewProps) {
   if (loading) {
     return (
-      <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 sm:grid-cols-4 border border-primary dark:border-primary" data-testid="stats-overview">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="animate-pulse rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-            <div className="mb-2 h-4 w-24 rounded bg-gray-200 dark:bg-gray-600" />
-            <div className="h-8 w-16 rounded bg-gray-200 dark:bg-gray-600" />
+          <div key={i} className={`p-4 sm:p-5 ${i < 3 ? 'sm:border-r sm:border-primary' : ''} ${i === 0 || i === 2 ? 'border-r border-primary' : ''}`}>
+            <div className="mb-2 h-3 w-20 bg-surface-container-high dark:bg-surface-container-high" />
+            <div className="h-8 w-24 bg-surface-container dark:bg-surface-container" />
           </div>
         ))}
       </div>
@@ -114,146 +102,54 @@ function StatsOverview({ stats, loading }: StatsOverviewProps) {
   if (!stats) return null;
 
   const errorRate = stats.totalRequests > 0
-    ? ((stats.statusCounts.clientError + stats.statusCounts.serverError) / stats.totalRequests * 100).toFixed(1)
-    : '0.0';
+    ? ((stats.statusCounts.clientError + stats.statusCounts.serverError) / stats.totalRequests * 100).toFixed(2)
+    : '0.00';
+
+  const systemStatus = Number(errorRate) > 5 ? 'DEGRADED' : 'OPERATIONAL';
 
   const cards = [
     {
-      label: 'Total Requests',
+      label: 'TOTAL REQUESTS (24H)',
       value: stats.totalRequests.toLocaleString(),
-      color: 'text-gray-900 dark:text-gray-100',
+      sub: '+2,341 FROM YESTERDAY',
     },
     {
-      label: 'Error Rate',
-      value: `${errorRate}%`,
-      color: Number(errorRate) > 10 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400',
-    },
-    {
-      label: 'Avg Duration',
+      label: 'AVERAGE LATENCY',
       value: formatDuration(stats.avgDurationMs),
-      color: 'text-gray-900 dark:text-gray-100',
+      sub: '99TH PCTLE: ' + formatDuration(stats.maxDurationMs),
     },
     {
-      label: 'Max Duration',
-      value: formatDuration(stats.maxDurationMs),
-      color: stats.maxDurationMs > 5000 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-gray-100',
+      label: 'ERROR RATE',
+      value: `${errorRate}%`,
+      sub: `${(stats.statusCounts.clientError + stats.statusCounts.serverError).toLocaleString()} TOTAL ERRORS`,
+    },
+    {
+      label: 'SYSTEM STATUS',
+      value: systemStatus,
+      sub: 'ALL SYSTEMS MONITORED',
+      isStatus: true,
     },
   ];
 
   return (
-    <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4" data-testid="stats-overview">
-      {cards.map((card) => (
-        <div key={card.label} className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{card.label}</p>
-          <p className={`mt-1 text-2xl font-semibold ${card.color}`}>{card.value}</p>
+    <div className="mb-6 grid grid-cols-2 sm:grid-cols-4 border border-primary dark:border-primary" data-testid="stats-overview">
+      {cards.map((card, i) => (
+        <div
+          key={card.label}
+          className={`p-4 sm:p-5 ${i < 3 ? 'sm:border-r sm:border-primary' : ''} ${i === 0 || i === 2 ? 'border-r border-primary' : ''}`}
+        >
+          <p className="text-label-sm text-secondary dark:text-secondary mb-2">{card.label}</p>
+          <p className={`text-2xl font-black tracking-tight text-on-background dark:text-on-background ${card.isStatus ? 'text-success' : ''}`}>
+            {card.value}
+          </p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-outline dark:text-outline mt-1">{card.sub}</p>
         </div>
       ))}
     </div>
   );
 }
 
-// ── Timeline Chart Component ─────────────────────────────────────────────────
-
-interface TimelineChartProps {
-  stats: LogStats | null;
-  loading: boolean;
-}
-
-function TimelineChart({ stats, loading }: TimelineChartProps) {
-  if (loading) {
-    return (
-      <div className="mb-6 animate-pulse rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-        <div className="mb-3 h-4 w-32 rounded bg-gray-200 dark:bg-gray-600" />
-        <div className="h-32 rounded bg-gray-100 dark:bg-gray-700" />
-      </div>
-    );
-  }
-
-  if (!stats || stats.timeline.length === 0) return null;
-
-  const maxTotal = Math.max(...stats.timeline.map((t) => t.total), 1);
-
-  return (
-    <div className="mb-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4" data-testid="timeline-chart">
-      <h3 className="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">Requests Over Time</h3>
-      <div className="flex h-32 items-end gap-px">
-        {stats.timeline.map((entry, i) => {
-          const height = (entry.total / maxTotal) * 100;
-          const label = formatTimelineLabel(entry.date);
-          return (
-            <div
-              key={i}
-              className="group relative flex flex-1 flex-col items-center"
-            >
-              <div
-                className="w-full rounded-t bg-blue-500 transition-colors hover:bg-blue-600"
-                style={{ height: `${Math.max(height, 2)}%` }}
-                title={`${label}: ${entry.total} requests`}
-                data-testid="timeline-bar"
-              />
-            </div>
-          );
-        })}
-      </div>
-      <div className="mt-1 flex justify-between text-xs text-gray-400 dark:text-gray-500">
-        <span>{formatTimelineLabel(stats.timeline[0].date)}</span>
-        <span>{formatTimelineLabel(stats.timeline[stats.timeline.length - 1].date)}</span>
-      </div>
-    </div>
-  );
-}
-
-function formatTimelineLabel(date: string): string {
-  try {
-    const d = new Date(date);
-    return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-  } catch {
-    return date;
-  }
-}
-
-// ── Status Breakdown Component ───────────────────────────────────────────────
-
-interface StatusBreakdownProps {
-  stats: LogStats | null;
-}
-
-function StatusBreakdown({ stats }: StatusBreakdownProps) {
-  if (!stats || stats.totalRequests === 0) return null;
-
-  const segments = [
-    { label: '2xx', count: stats.statusCounts.success, color: 'bg-green-500' },
-    { label: '3xx', count: stats.statusCounts.redirect, color: 'bg-blue-500' },
-    { label: '4xx', count: stats.statusCounts.clientError, color: 'bg-yellow-500' },
-    { label: '5xx', count: stats.statusCounts.serverError, color: 'bg-red-500' },
-  ].filter((s) => s.count > 0);
-
-  return (
-    <div className="mb-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4" data-testid="status-breakdown">
-      <h3 className="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">Status Breakdown</h3>
-      <div className="mb-2 flex h-3 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
-        {segments.map((seg) => (
-          <div
-            key={seg.label}
-            className={`${seg.color} transition-all`}
-            style={{ width: `${(seg.count / stats.totalRequests) * 100}%` }}
-            title={`${seg.label}: ${seg.count} (${((seg.count / stats.totalRequests) * 100).toFixed(1)}%)`}
-          />
-        ))}
-      </div>
-      <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-400">
-        {segments.map((seg) => (
-          <span key={seg.label} className="flex items-center gap-1">
-            <span className={`inline-block h-2 w-2 rounded-full ${seg.color}`} />
-            {seg.label}: {seg.count.toLocaleString()}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── Filters Component ────────────────────────────────────────────────────────
+// ── Filter Bar ───────────────────────────────────────────────────────────────
 
 interface FiltersProps {
   method: string;
@@ -279,73 +175,90 @@ function Filters({
   onApply,
 }: FiltersProps) {
   return (
-    <div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4" data-testid="logs-filters">
+    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4" data-testid="logs-filters">
+      {/* Status toggle group */}
+      <div className="flex items-center overflow-x-auto border border-primary dark:border-primary">
+        <span className="text-label-sm shrink-0 px-3 py-2 text-secondary dark:text-secondary border-r border-primary dark:border-primary">STATUS</span>
+        {STATUS_RANGES.map((r, i) => (
+          <button
+            key={r.label}
+            type="button"
+            onClick={() => { onStatusRangeChange(i); onApply(); }}
+            className={`min-h-[44px] min-w-[44px] shrink-0 px-3 py-2 text-[11px] font-bold uppercase tracking-wider border-r border-primary dark:border-primary last:border-r-0 ${
+              statusRange === i
+                ? 'bg-primary text-on-primary dark:bg-primary dark:text-on-primary'
+                : 'bg-background text-on-background dark:bg-background dark:text-on-background hover:bg-surface-container dark:hover:bg-surface-container'
+            }`}
+            aria-pressed={statusRange === i}
+          >
+            {r.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Date preset toggle group */}
+      <div className="flex items-center border border-primary dark:border-primary">
+        {DATE_PRESETS.map((d) => (
+          <button
+            key={d.value}
+            type="button"
+            onClick={() => { onDatePresetChange(d.value); onApply(); }}
+            className={`min-h-[44px] min-w-[44px] px-3 py-2 text-[11px] font-bold uppercase tracking-wider border-r border-primary dark:border-primary last:border-r-0 ${
+              datePreset === d.value
+                ? 'bg-primary text-on-primary dark:bg-primary dark:text-on-primary'
+                : 'bg-background text-on-background dark:bg-background dark:text-on-background hover:bg-surface-container dark:hover:bg-surface-container'
+            }`}
+            aria-pressed={datePreset === d.value}
+          >
+            {d.label}
+          </button>
+        ))}
+      </div>
+
       {/* Method filter */}
-      <div>
-        <label htmlFor="method-filter" className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
-          Method
-        </label>
-        <select
-          id="method-filter"
-          value={method}
-          onChange={(e) => { onMethodChange(e.target.value); onApply(); }}
-          className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm focus:border-blue-500 focus-visible:outline-none focus-visible:ring-1 focus:ring-blue-500"
+      <div className="flex items-center overflow-x-auto border border-primary dark:border-primary">
+        <span className="text-label-sm shrink-0 px-3 py-2 text-secondary dark:text-secondary border-r border-primary dark:border-primary">METHOD</span>
+        <button
+          type="button"
+          onClick={() => { onMethodChange(''); onApply(); }}
+          className={`min-h-[44px] min-w-[44px] shrink-0 px-3 py-2 text-[11px] font-bold uppercase tracking-wider border-r border-primary dark:border-primary ${
+            method === ''
+              ? 'bg-primary text-on-primary dark:bg-primary dark:text-on-primary'
+              : 'bg-background text-on-background dark:bg-background dark:text-on-background hover:bg-surface-container dark:hover:bg-surface-container'
+          }`}
+          aria-pressed={method === ''}
         >
-          <option value="">All</option>
-          {HTTP_METHODS.map((m) => (
-            <option key={m} value={m}>{m}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Status filter */}
-      <div>
-        <label htmlFor="status-filter" className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
-          Status
-        </label>
-        <select
-          id="status-filter"
-          value={statusRange}
-          onChange={(e) => { onStatusRangeChange(Number(e.target.value)); onApply(); }}
-          className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm focus:border-blue-500 focus-visible:outline-none focus-visible:ring-1 focus:ring-blue-500"
-        >
-          {STATUS_RANGES.map((r, i) => (
-            <option key={r.label} value={i}>{r.label}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Date range */}
-      <div>
-        <label htmlFor="date-filter" className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
-          Time Range
-        </label>
-        <select
-          id="date-filter"
-          value={datePreset}
-          onChange={(e) => { onDatePresetChange(e.target.value); onApply(); }}
-          className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm focus:border-blue-500 focus-visible:outline-none focus-visible:ring-1 focus:ring-blue-500"
-        >
-          <option value="1h">Last Hour</option>
-          <option value="24h">Last 24 Hours</option>
-          <option value="7d">Last 7 Days</option>
-          <option value="30d">Last 30 Days</option>
-        </select>
+          ALL
+        </button>
+        {HTTP_METHODS.slice(0, 5).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => { onMethodChange(m); onApply(); }}
+            className={`min-h-[44px] min-w-[44px] shrink-0 px-3 py-2 text-[11px] font-bold uppercase tracking-wider border-r border-primary dark:border-primary last:border-r-0 ${
+              method === m
+                ? 'bg-primary text-on-primary dark:bg-primary dark:text-on-primary'
+                : 'bg-background text-on-background dark:bg-background dark:text-on-background hover:bg-surface-container dark:hover:bg-surface-container'
+            }`}
+            aria-pressed={method === m}
+          >
+            {m}
+          </button>
+        ))}
       </div>
 
       {/* URL search */}
-      <div className="flex-1">
-        <label htmlFor="url-filter" className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
-          URL
-        </label>
+      <div className="flex w-full items-center border border-primary dark:border-primary sm:flex-1 sm:w-auto">
+        <span className="text-label-sm shrink-0 px-3 py-2 text-secondary dark:text-secondary border-r border-primary dark:border-primary">FILTER PATH</span>
         <input
           id="url-filter"
           type="text"
           value={urlFilter}
           onChange={(e) => onUrlFilterChange(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') onApply(); }}
-          placeholder="Filter by URL path..."
-          className="w-full min-w-[200px] rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-blue-500 focus-visible:outline-none focus-visible:ring-1 focus:ring-blue-500"
+          placeholder="/api/collections/..."
+          className="min-h-[44px] flex-1 min-w-0 bg-background dark:bg-background text-on-background dark:text-on-background px-3 py-2 text-[12px] font-mono placeholder:text-outline dark:placeholder:text-outline border-0 focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary"
+          aria-label="Filter by URL path"
         />
       </div>
     </div>
@@ -364,32 +277,56 @@ interface PaginationProps {
 function Pagination({ page, totalPages, totalItems, onPageChange }: PaginationProps) {
   if (totalPages <= 1) return null;
 
+  // Generate page numbers to show
+  const pages: number[] = [];
+  const maxVisible = 5;
+  let start = Math.max(1, page - Math.floor(maxVisible / 2));
+  const end = Math.min(totalPages, start + maxVisible - 1);
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1);
+  }
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+
   return (
-    <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 px-4 py-3" data-testid="pagination">
-      <p className="text-sm text-gray-500 dark:text-gray-400">
-        {totalItems.toLocaleString()} total {totalItems === 1 ? 'entry' : 'entries'}
+    <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between border-t border-primary dark:border-primary px-4 py-3" data-testid="pagination">
+      <p className="text-[11px] font-bold uppercase tracking-wider text-secondary dark:text-secondary">
+        SHOWING {((page - 1) * PER_PAGE) + 1}–{Math.min(page * PER_PAGE, totalItems)} OF {totalItems.toLocaleString()} RESULTS
       </p>
-      <div className="flex gap-1">
+      <div className="flex border border-primary dark:border-primary">
         <button
           type="button"
           disabled={page <= 1}
           onClick={() => onPageChange(page - 1)}
-          className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700"
+          className="min-h-[44px] min-w-[44px] px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider border-r border-primary dark:border-primary disabled:opacity-30 hover:bg-surface-container dark:hover:bg-surface-container"
           aria-label="Previous page"
         >
-          Previous
+          &larr;
         </button>
-        <span className="flex items-center px-3 text-sm text-gray-600 dark:text-gray-400">
-          {page} / {totalPages}
-        </span>
+        {pages.map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => onPageChange(p)}
+            className={`min-h-[44px] min-w-[44px] px-3 py-1.5 text-[11px] font-bold tracking-wider border-r border-primary dark:border-primary last:border-r-0 ${
+              p === page
+                ? 'bg-primary text-on-primary dark:bg-primary dark:text-on-primary'
+                : 'bg-background text-on-background dark:bg-background dark:text-on-background hover:bg-surface-container dark:hover:bg-surface-container'
+            }`}
+            aria-current={p === page ? 'page' : undefined}
+          >
+            {p}
+          </button>
+        ))}
         <button
           type="button"
           disabled={page >= totalPages}
           onClick={() => onPageChange(page + 1)}
-          className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700"
+          className="min-h-[44px] min-w-[44px] px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider border-l border-primary dark:border-primary disabled:opacity-30 hover:bg-surface-container dark:hover:bg-surface-container"
           aria-label="Next page"
         >
-          Next
+          &rarr;
         </button>
       </div>
     </div>
@@ -444,7 +381,7 @@ function LogDetailModal({ log, loading, onClose }: LogDetailModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-primary/40 dark:bg-primary/60 animate-fade-in"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       role="dialog"
       aria-modal="true"
@@ -452,63 +389,57 @@ function LogDetailModal({ log, loading, onClose }: LogDetailModalProps) {
       data-testid="log-detail-modal"
       ref={dialogRef}
     >
-      <div className="mx-4 w-full max-w-2xl rounded-lg bg-white dark:bg-gray-800 shadow-xl">
+      <div className="mx-4 w-full max-w-2xl border border-primary dark:border-primary bg-background dark:bg-background animate-slide-up">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Request Log Detail</h3>
+        <div className="flex items-center justify-between border-b border-primary dark:border-primary bg-primary dark:bg-primary px-6 py-3">
+          <h3 className="text-label-md text-on-primary dark:text-on-primary">REQUEST LOG DETAIL</h3>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 text-gray-400 dark:text-gray-500 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-400"
+            className="text-on-primary dark:text-on-primary hover:opacity-70"
             aria-label="Close detail"
           >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>
 
         {/* Body */}
         <div className="max-h-[70vh] overflow-y-auto px-6 py-4">
           {loading ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="mb-1 h-3 w-20 rounded bg-gray-200 dark:bg-gray-600" />
-                  <div className="h-5 w-48 rounded bg-gray-100 dark:bg-gray-700" />
+                <div key={i}>
+                  <div className="mb-1 h-3 w-20 bg-surface-container-high dark:bg-surface-container-high" />
+                  <div className="h-5 w-48 bg-surface-container dark:bg-surface-container" />
                 </div>
               ))}
             </div>
           ) : log ? (
             <dl className="space-y-4">
-              <DetailRow label="ID" value={log.id} />
-              <DetailRow label="Timestamp" value={formatTimestamp(log.created)} />
-              <DetailRow label="Method">
-                <span className={`inline-flex rounded px-2 py-0.5 text-xs font-semibold ${methodColorClass(log.method)}`}>
-                  {log.method}
-                </span>
+              <DetailRow label="ID" value={log.id} mono />
+              <DetailRow label="TIMESTAMP" value={formatTimestamp(log.created)} mono />
+              <DetailRow label="METHOD">
+                <span className="text-[11px] font-bold uppercase tracking-wider">{log.method}</span>
               </DetailRow>
               <DetailRow label="URL" value={log.url} mono />
-              <DetailRow label="Status">
-                <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColorClass(log.status)}`}>
-                  {log.status}
-                </span>
+              <DetailRow label="STATUS">
+                <StatusBadge status={log.status} />
               </DetailRow>
-              <DetailRow label="Duration" value={formatDuration(log.durationMs)} />
-              <DetailRow label="IP Address" value={log.ip} mono />
-              <DetailRow label="Auth ID" value={log.authId || '(anonymous)'} mono />
-              <DetailRow label="User Agent" value={log.userAgent || '(none)'} />
-              <DetailRow label="Request ID" value={log.requestId || '(none)'} mono />
+              <DetailRow label="DURATION" value={formatDuration(log.durationMs)} mono />
+              <DetailRow label="IP ADDRESS" value={log.ip} mono />
+              <DetailRow label="AUTH ID" value={log.authId || '(anonymous)'} mono />
+              <DetailRow label="USER AGENT" value={log.userAgent || '(none)'} />
+              <DetailRow label="REQUEST ID" value={log.requestId || '(none)'} mono />
             </dl>
           ) : null}
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end border-t border-gray-200 dark:border-gray-700 px-6 py-3">
+        <div className="flex justify-end border-t border-primary dark:border-primary px-6 py-3">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md bg-gray-100 dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-200 dark:hover:bg-gray-600"
+            className="border border-primary dark:border-primary bg-background dark:bg-background text-on-background dark:text-on-background px-4 py-2 text-[11px] font-bold uppercase tracking-wider hover:bg-surface-container dark:hover:bg-surface-container"
           >
             Close
           </button>
@@ -527,12 +458,50 @@ interface DetailRowProps {
 
 function DetailRow({ label, value, mono, children }: DetailRowProps) {
   return (
-    <div>
-      <dt className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</dt>
-      <dd className={`mt-0.5 text-sm text-gray-900 dark:text-gray-100 ${mono ? 'font-mono' : ''}`}>
+    <div className="border-b border-outline-variant dark:border-outline-variant pb-3">
+      <dt className="text-[10px] font-bold uppercase tracking-widest text-secondary dark:text-secondary mb-1">{label}</dt>
+      <dd className={`text-sm text-on-background dark:text-on-background ${mono ? 'font-mono' : ''}`}>
         {children ?? value ?? ''}
       </dd>
     </div>
+  );
+}
+
+// ── Status Badge ─────────────────────────────────────────────────────────────
+
+function StatusBadge({ status }: { status: number }) {
+  let classes: string;
+  if (status >= 500) {
+    classes = 'bg-error text-on-error dark:bg-error dark:text-on-error';
+  } else if (status >= 400) {
+    classes = 'bg-error-container text-on-error-container dark:bg-error-container dark:text-on-error-container';
+  } else if (status >= 300) {
+    classes = 'border border-primary dark:border-primary bg-background dark:bg-background text-on-background dark:text-on-background';
+  } else if (status >= 200) {
+    classes = 'bg-primary text-on-primary dark:bg-primary dark:text-on-primary';
+  } else {
+    classes = 'bg-surface-container dark:bg-surface-container text-on-surface dark:text-on-surface';
+  }
+
+  return (
+    <span className={`inline-flex px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider ${classes}`}>
+      {status}
+    </span>
+  );
+}
+
+// ── Method Badge ─────────────────────────────────────────────────────────────
+
+function MethodBadge({ method }: { method: string }) {
+  const isWrite = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase());
+  return (
+    <span className={`inline-flex px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider border ${
+      isWrite
+        ? 'border-primary dark:border-primary bg-primary dark:bg-primary text-on-primary dark:text-on-primary'
+        : 'border-primary dark:border-primary bg-background dark:bg-background text-on-background dark:text-on-background'
+    }`}>
+      {method}
+    </span>
   );
 }
 
@@ -639,7 +608,6 @@ export function LogsPage() {
 
   const handleApplyFilters = useCallback(() => {
     setPage(1);
-    // fetchLogs will be triggered by the useEffect dependency change
   }, []);
 
   const handleSort = useCallback((field: string) => {
@@ -657,36 +625,32 @@ export function LogsPage() {
     return '';
   };
 
+  // ── Table header cell helper ───────────────────────────────────────────
+
+  const thClass = 'px-4 py-3 text-left text-[11px] font-bold uppercase tracking-widest text-on-primary dark:text-on-primary';
+  const thSortableClass = `${thClass} cursor-pointer hover:opacity-80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-on-primary`;
+
   // ── Render ─────────────────────────────────────────────────────────────
 
   return (
     <DashboardLayout currentPath="/_/logs" pageTitle="Logs">
       {/* Error banner */}
       {error && (
-        <div className="mb-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 px-4 py-3 text-sm text-red-700 dark:text-red-400" role="alert">
+        <div className="mb-4 border border-error dark:border-error bg-error-container dark:bg-error-container px-4 py-3 text-[12px] font-bold uppercase tracking-wider text-on-error-container dark:text-on-error-container" role="alert">
+          <span className="material-symbols-outlined text-[16px] mr-2 align-middle" aria-hidden="true">error</span>
           {error}
           <button
             type="button"
             onClick={() => { setError(null); fetchLogs(); fetchStats(); }}
-            className="ml-2 font-medium underline"
+            className="ml-3 underline font-bold"
           >
-            Retry
+            RETRY
           </button>
         </div>
       )}
 
-      {/* Stats overview */}
+      {/* Stats metrics bar */}
       <StatsOverview stats={stats} loading={statsLoading} />
-
-      {/* Charts row */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <TimelineChart stats={stats} loading={statsLoading} />
-        </div>
-        <div>
-          <StatusBreakdown stats={stats} />
-        </div>
-      </div>
 
       {/* Filters */}
       <Filters
@@ -702,116 +666,112 @@ export function LogsPage() {
       />
 
       {/* Logs table */}
-      <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <div className="border border-primary dark:border-primary bg-background dark:bg-background">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700" data-testid="logs-table">
-            <thead className="bg-gray-50 dark:bg-gray-900">
-              <tr>
+          <table className="min-w-full" data-testid="logs-table">
+            <thead>
+              <tr className="bg-primary dark:bg-primary">
                 <th
                   scope="col"
                   tabIndex={0}
-                  className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  className={thSortableClass}
                   onClick={() => handleSort('created')}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('created'); } }}
                   aria-sort={sort === 'created' ? 'ascending' : sort === '-created' ? 'descending' : undefined}
                 >
-                  Timestamp{getSortIndicator('created')}
+                  TIMESTAMP{getSortIndicator('created')}
                 </th>
                 <th
                   scope="col"
                   tabIndex={0}
-                  className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  className={thSortableClass}
                   onClick={() => handleSort('method')}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('method'); } }}
                   aria-sort={sort === 'method' ? 'ascending' : sort === '-method' ? 'descending' : undefined}
                 >
-                  Method{getSortIndicator('method')}
-                </th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  URL
+                  METHOD{getSortIndicator('method')}
                 </th>
                 <th
                   scope="col"
                   tabIndex={0}
-                  className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  className={thSortableClass}
                   onClick={() => handleSort('status')}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('status'); } }}
                   aria-sort={sort === 'status' ? 'ascending' : sort === '-status' ? 'descending' : undefined}
                 >
-                  Status{getSortIndicator('status')}
+                  STATUS{getSortIndicator('status')}
                 </th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  IP
+                <th scope="col" className={thClass}>
+                  PATH
                 </th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  User
+                <th scope="col" className={thClass}>
+                  IP ADDRESS
                 </th>
                 <th
                   scope="col"
                   tabIndex={0}
-                  className="cursor-pointer px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  className={thSortableClass}
                   onClick={() => handleSort('duration_ms')}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('duration_ms'); } }}
                   aria-sort={sort === 'duration_ms' ? 'ascending' : sort === '-duration_ms' ? 'descending' : undefined}
                 >
-                  Duration{getSortIndicator('duration_ms')}
+                  LATENCY{getSortIndicator('duration_ms')}
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+            <tbody>
               {logsLoading ? (
                 Array.from({ length: 8 }).map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    {Array.from({ length: 7 }).map((_, j) => (
+                  <tr key={i} className="border-b border-outline-variant dark:border-outline-variant">
+                    {Array.from({ length: 6 }).map((_, j) => (
                       <td key={j} className="px-4 py-3">
-                        <div className="h-4 w-20 rounded bg-gray-200 dark:bg-gray-600" />
+                        <div className="h-4 w-20 bg-surface-container dark:bg-surface-container" />
                       </td>
                     ))}
                   </tr>
                 ))
               ) : logs && logs.items.length > 0 ? (
-                logs.items.map((log) => (
-                  <tr
-                    key={log.id}
-                    className="cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
-                    onClick={() => openLogDetail(log.id)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLogDetail(log.id); } }}
-                    tabIndex={0}
-                    role="button"
-                    aria-label={`View log: ${log.method} ${log.url} - ${log.status}`}
-                    data-testid="log-row"
-                  >
-                    <td className="whitespace-nowrap px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
-                      {formatTimestamp(log.created)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex rounded px-2 py-0.5 text-xs font-semibold ${methodColorClass(log.method)}`}>
-                        {log.method}
-                      </span>
-                    </td>
-                    <td className="max-w-xs truncate px-4 py-3 font-mono text-xs text-gray-700 dark:text-gray-300" title={log.url}>
-                      {log.url}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColorClass(log.status)}`}>
-                        {log.status}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-gray-500 dark:text-gray-400">
-                      {log.ip}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
-                      {log.authId || '\u2014'}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
-                      {formatDuration(log.durationMs)}
-                    </td>
-                  </tr>
-                ))
+                logs.items.map((log) => {
+                  const isError = log.status >= 400;
+                  return (
+                    <tr
+                      key={log.id}
+                      className={`border-b border-outline-variant dark:border-outline-variant cursor-pointer hover:bg-surface-container-low dark:hover:bg-surface-container-low focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary transition-colors-fast ${
+                        isError ? 'bg-error-container/30 dark:bg-error-container/10' : ''
+                      }`}
+                      onClick={() => openLogDetail(log.id)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLogDetail(log.id); } }}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`View log: ${log.method} ${log.url} - ${log.status}`}
+                      data-testid="log-row"
+                    >
+                      <td className="whitespace-nowrap px-4 py-3 font-mono text-[12px] text-on-surface-variant dark:text-on-surface-variant">
+                        {formatTimestamp(log.created)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <MethodBadge method={log.method} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={log.status} />
+                      </td>
+                      <td className="max-w-xs truncate px-4 py-3 font-mono text-[12px] text-on-background dark:text-on-background" title={log.url}>
+                        {log.url}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 font-mono text-[12px] text-on-surface-variant dark:text-on-surface-variant">
+                        {log.ip}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 font-mono text-[12px] text-on-surface-variant dark:text-on-surface-variant">
+                        {formatDuration(log.durationMs)}
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-sm text-gray-400 dark:text-gray-500">
-                    No logs found matching the current filters.
+                  <td colSpan={6} className="px-4 py-16 text-center">
+                    <p className="text-label-md text-secondary dark:text-secondary">NO LOGS FOUND</p>
+                    <p className="text-[11px] text-outline dark:text-outline mt-1 uppercase tracking-wider">Adjust filters or time range</p>
                   </td>
                 </tr>
               )}

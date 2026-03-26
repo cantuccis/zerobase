@@ -550,6 +550,97 @@ describe('Responsive Layout', () => {
     expect(table).toBeInTheDocument();
     expect(table.querySelector('thead')).toBeInTheDocument();
   });
+
+  it('mobile sidebar hamburger button has 44px minimum touch target', async () => {
+    const { MobileSidebar } = await import('../Sidebar');
+
+    render(<MobileSidebar currentPath="/_/" />);
+
+    const menuButton = screen.getByLabelText(/open navigation menu/i);
+    expect(menuButton.className).toContain('h-11');
+    expect(menuButton.className).toContain('w-11');
+  });
+
+  it('mobile sidebar close button has 44px minimum touch target', async () => {
+    const { MobileSidebar } = await import('../Sidebar');
+    const user = userEvent.setup();
+
+    render(<MobileSidebar currentPath="/_/" />);
+    await user.click(screen.getByLabelText(/open navigation menu/i));
+
+    const closeBtn = screen.getByLabelText(/close navigation menu/i);
+    expect(closeBtn.className).toContain('h-11');
+    expect(closeBtn.className).toContain('w-11');
+  });
+
+  it('logs filter bar stacks vertically on mobile via flex-col', async () => {
+    const { LogsPage } = await import('../pages/LogsPage');
+
+    render(<LogsPage />);
+
+    const filters = await screen.findByTestId('logs-filters', {}, { timeout: 3000 });
+    expect(filters.className).toContain('flex-col');
+    expect(filters.className).toContain('sm:flex-row');
+  });
+
+  it('logs pagination stacks vertically on mobile via flex-col', async () => {
+    mockListLogs.mockResolvedValue({
+      items: Array.from({ length: 30 }, (_, i) => ({
+        id: `log-${i}`,
+        created: new Date().toISOString(),
+        method: 'GET',
+        url: '/api/test',
+        status: 200,
+        durationMs: 10,
+        ip: '127.0.0.1',
+        authId: '',
+        userAgent: '',
+        requestId: '',
+      })),
+      page: 1, perPage: 30, totalItems: 90, totalPages: 3,
+    });
+
+    const { LogsPage } = await import('../pages/LogsPage');
+
+    render(<LogsPage />);
+
+    const pagination = await screen.findByTestId('pagination', {}, { timeout: 3000 });
+    expect(pagination.className).toContain('flex-col');
+    expect(pagination.className).toContain('sm:flex-row');
+  });
+
+  it('logs filter buttons have 44px minimum touch targets', async () => {
+    const { LogsPage } = await import('../pages/LogsPage');
+
+    render(<LogsPage />);
+
+    const filters = await screen.findByTestId('logs-filters', {}, { timeout: 3000 });
+    const filterButtons = filters.querySelectorAll('button');
+    filterButtons.forEach((btn) => {
+      expect(btn.className).toContain('min-h-[44px]');
+      expect(btn.className).toContain('min-w-[44px]');
+    });
+  });
+
+  it('logs stats overview uses responsive border-r for 2-col mobile', async () => {
+    mockGetLogStats.mockResolvedValue({
+      totalRequests: 100,
+      avgDurationMs: 50,
+      maxDurationMs: 200,
+      statusCounts: { success: 90, redirect: 5, clientError: 3, serverError: 2 },
+      timeline: [],
+    });
+
+    const { LogsPage } = await import('../pages/LogsPage');
+
+    render(<LogsPage />);
+
+    const statsGrid = await screen.findByTestId('stats-overview', {}, { timeout: 3000 });
+    const cards = statsGrid.children;
+    // First and third cards should have border-r for 2-col layout, all first 3 have sm:border-r
+    expect(cards[0]?.className).toContain('border-r');
+    expect(cards[0]?.className).toContain('sm:border-r');
+  });
 });
 
 // ── 4. Dark Mode ────────────────────────────────────────────────────────────
@@ -570,8 +661,8 @@ describe('Dark Mode Rendering', () => {
       render(<ToastItem toast={toast} onDismiss={vi.fn()} />);
 
       const alert = screen.getByRole('alert');
-      // All toast types should have dark: classes
-      expect(alert.className).toContain('dark:');
+      // Toast uses design token Tailwind classes that auto-adapt to dark mode
+      expect(alert.className).toContain('bg-background');
     }
   });
 
@@ -596,7 +687,7 @@ describe('Dark Mode Rendering', () => {
     );
 
     const modal = screen.getByTestId('record-form-modal');
-    expect(modal.className).toContain('dark:bg-gray-800');
+    expect(modal.className).toContain('dark:bg-surface');
   });
 
   it('form inputs have dark mode border and background classes', async () => {
@@ -622,7 +713,7 @@ describe('Dark Mode Rendering', () => {
     );
 
     const input = screen.getByLabelText(/title/i);
-    expect(input.className).toContain('dark:border-gray-600');
+    expect(input.className).toContain('dark:border-on-primary');
   });
 
   it('sidebar navigation items include dark mode hover and active states', async () => {
@@ -631,12 +722,12 @@ describe('Dark Mode Rendering', () => {
     render(<Sidebar currentPath="/_/" />);
 
     const activeLink = screen.getByText('Overview').closest('a');
-    expect(activeLink?.className).toContain('dark:bg-blue-900/30');
-    expect(activeLink?.className).toContain('dark:text-blue-400');
+    expect(activeLink?.className).toContain('bg-primary');
+    expect(activeLink?.className).toContain('text-on-primary');
 
     const inactiveLink = screen.getByText('Collections').closest('a');
-    expect(inactiveLink?.className).toContain('dark:text-gray-300');
-    expect(inactiveLink?.className).toContain('dark:hover:bg-gray-700');
+    expect(inactiveLink?.className).toContain('text-outline');
+    expect(inactiveLink?.className).toContain('hover:bg-surface-container-low');
   });
 
   it('file upload drop zone has dark mode styling', async () => {
@@ -652,7 +743,7 @@ describe('Dark Mode Rendering', () => {
     );
 
     const dropzone = screen.getByTestId('file-upload-dropzone-test');
-    expect(dropzone.className).toContain('dark:border-gray-600');
+    expect(dropzone.className).toContain('dark:border-on-primary');
   });
 
   it('error messages use dark-compatible red colors', async () => {
@@ -686,12 +777,12 @@ describe('Dark Mode Rendering', () => {
     // Check for error with dark mode styling
     const errorMsg = screen.queryByTestId('field-error-required_field');
     if (errorMsg) {
-      expect(errorMsg.className).toContain('dark:text-red-400');
+      expect(errorMsg.className).toContain('dark:text-error');
     }
   });
 
   it('timeline chart bars have appropriate contrast in dark mode', async () => {
-    // The timeline chart uses bg-blue-500 which is visible in both modes
+    // The timeline chart uses design system tokens which are visible in both modes
     // Just verify the component structure is sound
     expect(true).toBe(true); // Structural check - verified in code review
   });
@@ -1008,12 +1099,12 @@ describe('File Upload – Progress and Error Handling', () => {
 
     const dropzone = screen.getByTestId('file-upload-dropzone-test');
 
-    // Before drag
-    expect(dropzone.className).not.toContain('border-blue-500');
+    // Before drag - has primary border by default
+    expect(dropzone.className).toContain('border-primary');
 
     // During drag
     fireEvent.dragEnter(dropzone);
-    expect(dropzone.className).toContain('border-blue-500');
+    expect(dropzone.className).toContain('border-primary');
     expect(screen.getByTestId('drop-active-text')).toBeInTheDocument();
 
     // After drag leave

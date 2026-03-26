@@ -67,14 +67,14 @@ function truncate(text: string, maxLen: number): string {
 
 function TableSkeleton() {
   return (
-    <div className="space-y-2" data-testid="table-skeleton">
+    <div className="space-y-0 animate-pulse-subtle" data-testid="table-skeleton">
       {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="animate-pulse rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+        <div key={i} className="animate-pulse border border-primary dark:border-on-primary bg-surface dark:bg-surface p-4">
           <div className="flex gap-4">
-            <div className="h-4 w-24 rounded bg-gray-200 dark:bg-gray-600" />
-            <div className="h-4 w-32 rounded bg-gray-200 dark:bg-gray-600" />
-            <div className="h-4 w-20 rounded bg-gray-200 dark:bg-gray-600" />
-            <div className="h-4 w-28 rounded bg-gray-200 dark:bg-gray-600" />
+            <div className="h-4 w-24 bg-surface-container dark:bg-surface-container" />
+            <div className="h-4 w-32 bg-surface-container dark:bg-surface-container" />
+            <div className="h-4 w-20 bg-surface-container dark:bg-surface-container" />
+            <div className="h-4 w-28 bg-surface-container dark:bg-surface-container" />
           </div>
         </div>
       ))}
@@ -87,17 +87,17 @@ function TableSkeleton() {
 function SortIndicator({ field, sort }: { field: string; sort: SortConfig | null }) {
   if (!sort || sort.field !== field) {
     return (
-      <svg className="ml-1 inline h-3 w-3 text-gray-300 dark:text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <svg className="ml-1 inline h-3 w-3 text-on-primary/40 dark:text-primary/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
         <path d="M8 9l4-4 4 4M8 15l4 4 4-4" />
       </svg>
     );
   }
   return sort.direction === 'asc' ? (
-    <svg className="ml-1 inline h-3 w-3 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <svg className="ml-1 inline h-3 w-3 text-on-primary dark:text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
       <path d="M8 15l4-4 4 4" />
     </svg>
   ) : (
-    <svg className="ml-1 inline h-3 w-3 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <svg className="ml-1 inline h-3 w-3 text-on-primary dark:text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
       <path d="M8 9l4 4 4-4" />
     </svg>
   );
@@ -119,7 +119,7 @@ function ColumnToggle({ columns, visibleColumns, onToggle }: ColumnToggleProps) 
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+        className="inline-flex items-center gap-1.5 border border-primary dark:border-on-primary bg-surface dark:bg-surface px-3 py-2 text-sm font-medium text-on-surface dark:text-on-surface hover:bg-surface-container-low dark:hover:bg-surface-container-low"
         aria-label="Toggle column visibility"
         aria-expanded={open}
       >
@@ -138,19 +138,21 @@ function ColumnToggle({ columns, visibleColumns, onToggle }: ColumnToggleProps) 
             aria-hidden="true"
           />
           <div
-            className="absolute right-0 z-20 mt-1 w-56 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-1 shadow-lg dark:shadow-gray-900/20"
-            role="menu"
+            className="absolute right-0 z-20 mt-1 w-56 border border-primary dark:border-on-primary bg-surface dark:bg-surface py-1 animate-slide-down-in"
+            role="listbox"
+            aria-label="Column visibility options"
+            onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false); }}
           >
             {columns.map((col) => (
               <label
                 key={col}
-                className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm text-on-surface dark:text-on-surface hover:bg-surface-container-low dark:hover:bg-surface-container-low"
               >
                 <input
                   type="checkbox"
                   checked={visibleColumns.has(col)}
                   onChange={() => onToggle(col)}
-                  className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                  className="h-4 w-4 border-primary dark:border-on-primary text-primary dark:text-on-primary focus:ring-1 focus:ring-primary"
                 />
                 {col}
               </label>
@@ -174,17 +176,29 @@ interface PaginationProps {
 }
 
 function Pagination({ page, totalPages, totalItems, perPage, onPageChange, onPerPageChange }: PaginationProps) {
+  // Generate page numbers to display
+  const pageNumbers: number[] = [];
+  const maxVisible = 5;
+  let start = Math.max(1, page - Math.floor(maxVisible / 2));
+  const end = Math.min(totalPages, start + maxVisible - 1);
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1);
+  }
+  for (let i = start; i <= end; i++) {
+    pageNumbers.push(i);
+  }
+
   return (
     <div className="flex flex-col items-center justify-between gap-3 sm:flex-row" data-testid="pagination">
-      <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+      <div className="flex items-center gap-2 text-sm text-secondary dark:text-secondary">
         <span>{totalItems} record{totalItems !== 1 ? 's' : ''}</span>
-        <span className="text-gray-300 dark:text-gray-600">|</span>
+        <span className="text-outline-variant dark:text-outline-variant">|</span>
         <label htmlFor="per-page-select" className="sr-only">Records per page</label>
         <select
           id="per-page-select"
           value={perPage}
           onChange={(e) => onPerPageChange(Number(e.target.value))}
-          className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 py-1 pl-2 pr-6 text-sm focus:border-blue-500 focus-visible:outline-none focus-visible:ring-1 focus:ring-blue-500"
+          className="border border-primary dark:border-on-primary bg-surface dark:bg-surface text-on-surface dark:text-on-surface py-1 pl-2 pr-6 text-sm focus:border-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
         >
           {PER_PAGE_OPTIONS.map((n) => (
             <option key={n} value={n}>{n} per page</option>
@@ -192,12 +206,12 @@ function Pagination({ page, totalPages, totalItems, perPage, onPageChange, onPer
         </select>
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0">
         <button
           type="button"
           onClick={() => onPageChange(1)}
           disabled={page <= 1}
-          className="rounded-md px-2 py-1 text-sm text-gray-600 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+          className="border border-primary dark:border-on-primary px-2.5 py-1 text-sm text-on-surface dark:text-on-surface hover:bg-surface-container-low dark:hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-40"
           aria-label="First page"
         >
           ««
@@ -206,21 +220,34 @@ function Pagination({ page, totalPages, totalItems, perPage, onPageChange, onPer
           type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="rounded-md px-2 py-1 text-sm text-gray-600 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+          className="-ml-px border border-primary dark:border-on-primary px-2.5 py-1 text-sm text-on-surface dark:text-on-surface hover:bg-surface-container-low dark:hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-40"
           aria-label="Previous page"
         >
           «
         </button>
 
-        <span className="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">
-          Page {page} of {totalPages || 1}
-        </span>
+        {pageNumbers.map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => onPageChange(n)}
+            className={`-ml-px border border-primary dark:border-on-primary px-3 py-1 text-sm font-medium ${
+              n === page
+                ? 'bg-primary dark:bg-on-primary text-on-primary dark:text-primary'
+                : 'text-on-surface dark:text-on-surface hover:bg-surface-container-low dark:hover:bg-surface-container-low'
+            }`}
+            aria-label={`Page ${n}`}
+            aria-current={n === page ? 'page' : undefined}
+          >
+            {n}
+          </button>
+        ))}
 
         <button
           type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          className="rounded-md px-2 py-1 text-sm text-gray-600 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+          className="-ml-px border border-primary dark:border-on-primary px-2.5 py-1 text-sm text-on-surface dark:text-on-surface hover:bg-surface-container-low dark:hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-40"
           aria-label="Next page"
         >
           »
@@ -229,7 +256,7 @@ function Pagination({ page, totalPages, totalItems, perPage, onPageChange, onPer
           type="button"
           onClick={() => onPageChange(totalPages)}
           disabled={page >= totalPages}
-          className="rounded-md px-2 py-1 text-sm text-gray-600 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+          className="-ml-px border border-primary dark:border-on-primary px-2.5 py-1 text-sm text-on-surface dark:text-on-surface hover:bg-surface-container-low dark:hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-40"
           aria-label="Last page"
         >
           »»
@@ -267,21 +294,21 @@ function RecordDetail({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-end bg-black/30"
+      className="fixed inset-0 z-50 flex items-start justify-end bg-primary/30 dark:bg-on-primary/30 animate-fade-in"
       role="dialog"
       aria-modal="true"
       aria-labelledby="record-detail-title"
     >
-      <div className="h-full w-full max-w-lg overflow-y-auto bg-white dark:bg-gray-800 shadow-xl dark:shadow-gray-900/20 sm:w-[480px]">
-        <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-          <h3 id="record-detail-title" className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-            Record: {record.id}
+      <div className="h-full w-full max-w-lg overflow-y-auto border-l border-primary dark:border-on-primary bg-surface dark:bg-surface sm:w-[480px] animate-slide-right-in">
+        <div className="flex items-center justify-between border-b border-primary dark:border-on-primary bg-primary dark:bg-on-primary px-4 py-3">
+          <h3 id="record-detail-title" className="text-sm font-semibold text-on-primary dark:text-primary">
+            Record: <span className="font-mono">{record.id}</span>
           </h3>
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => onEdit(record)}
-              className="rounded-md p-1.5 text-blue-600 dark:text-blue-400 transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30"
+              className="p-1.5 text-on-primary dark:text-primary hover:text-on-primary/70 dark:hover:text-primary/70"
               aria-label="Edit record"
               data-testid="edit-record-btn"
             >
@@ -295,7 +322,7 @@ function RecordDetail({
                 <button
                   type="button"
                   onClick={() => onDelete(record.id)}
-                  className="rounded-md bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700 dark:hover:bg-red-600"
+                  className="bg-error px-2 py-1 text-xs font-medium text-on-error"
                   data-testid="confirm-delete-btn"
                 >
                   Confirm
@@ -303,7 +330,7 @@ function RecordDetail({
                 <button
                   type="button"
                   onClick={() => onDeleteConfirm(null)}
-                  className="rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  className="border border-on-primary dark:border-primary px-2 py-1 text-xs font-medium text-on-primary dark:text-primary"
                   data-testid="cancel-delete-btn"
                 >
                   Cancel
@@ -313,7 +340,7 @@ function RecordDetail({
               <button
                 type="button"
                 onClick={() => onDeleteConfirm(record.id)}
-                className="rounded-md p-1.5 text-red-500 dark:text-red-400 transition-colors hover:bg-red-50 dark:hover:bg-red-900/30"
+                className="p-1.5 text-on-primary dark:text-primary hover:text-error dark:hover:text-error"
                 aria-label="Delete record"
                 data-testid="delete-record-btn"
               >
@@ -326,7 +353,7 @@ function RecordDetail({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md p-1.5 text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+              className="p-1.5 text-on-primary dark:text-primary hover:text-on-primary/70 dark:hover:text-primary/70"
               aria-label="Close record detail"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -337,11 +364,11 @@ function RecordDetail({
           </div>
         </div>
 
-        <dl className="divide-y divide-gray-100 dark:divide-gray-700 px-4">
+        <dl className="px-4">
           {allFields.map((field) => (
-            <div key={field} className="py-3">
-              <dt className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">{field}</dt>
-              <dd className="mt-1 whitespace-pre-wrap break-all text-sm text-gray-900 dark:text-gray-100">
+            <div key={field} className="border-b border-outline-variant dark:border-outline-variant py-3">
+              <dt className="text-label-sm font-bold uppercase tracking-[0.05em] text-secondary dark:text-secondary">{field}</dt>
+              <dd className="mt-1 whitespace-pre-wrap break-all text-sm text-on-surface dark:text-on-surface">
                 {formatCellValue(record[field])}
               </dd>
             </div>
@@ -585,20 +612,20 @@ export function RecordsBrowserPage({ collectionId }: RecordsBrowserPageProps) {
   return (
     <DashboardLayout currentPath={`/_/collections/${collectionId}`} pageTitle={collectionName}>
       {/* Breadcrumb */}
-      <nav className="mb-4 text-sm" aria-label="Breadcrumb">
-        <ol className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+      <nav className="mb-6 text-sm" aria-label="Breadcrumb">
+        <ol className="flex items-center gap-1.5 text-secondary dark:text-secondary">
           <li>
-            <a href="/_/collections" className="hover:text-blue-600 dark:hover:text-blue-400">Collections</a>
+            <a href="/_/collections" className="hover:text-on-surface dark:hover:text-on-surface underline">Collections</a>
           </li>
           <li aria-hidden="true">/</li>
-          <li className="font-medium text-gray-900 dark:text-gray-100">{collectionName}</li>
+          <li className="font-medium text-on-surface dark:text-on-surface">{collectionName}</li>
         </ol>
       </nav>
 
       {/* Toolbar */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         {/* Filter input */}
-        <form onSubmit={handleFilterSubmit} className="flex gap-2 sm:max-w-md sm:flex-1">
+        <form onSubmit={handleFilterSubmit} className="flex gap-0 sm:max-w-md sm:flex-1">
           <label htmlFor="record-filter" className="sr-only">Filter records</label>
           <input
             id="record-filter"
@@ -606,11 +633,11 @@ export function RecordsBrowserPage({ collectionId }: RecordsBrowserPageProps) {
             placeholder="Filter records… (e.g. title = 'hello')"
             value={filterInput}
             onChange={(e) => setFilterInput(e.target.value)}
-            className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus-visible:outline-none focus-visible:ring-1 focus:ring-blue-500"
+            className="w-full border border-primary dark:border-on-primary bg-surface dark:bg-surface px-3 py-2 text-sm text-on-surface dark:text-on-surface placeholder-secondary dark:placeholder-secondary focus:border-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
           />
           <button
             type="submit"
-            className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:hover:bg-blue-600"
+            className="-ml-px bg-primary dark:bg-on-primary border border-primary dark:border-on-primary px-3 py-2 text-sm font-medium text-on-primary dark:text-primary"
           >
             Filter
           </button>
@@ -618,7 +645,7 @@ export function RecordsBrowserPage({ collectionId }: RecordsBrowserPageProps) {
             <button
               type="button"
               onClick={handleClearFilter}
-              className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="-ml-px border border-primary dark:border-on-primary bg-surface dark:bg-surface px-3 py-2 text-sm font-medium text-on-surface dark:text-on-surface hover:bg-surface-container-low dark:hover:bg-surface-container-low"
             >
               Clear
             </button>
@@ -637,7 +664,7 @@ export function RecordsBrowserPage({ collectionId }: RecordsBrowserPageProps) {
           <button
             type="button"
             onClick={handleOpenCreate}
-            className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:hover:bg-blue-600"
+            className="inline-flex items-center gap-1.5 bg-primary dark:bg-on-primary px-3 py-2 text-sm font-medium text-on-primary dark:text-primary"
             data-testid="new-record-btn"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -648,7 +675,7 @@ export function RecordsBrowserPage({ collectionId }: RecordsBrowserPageProps) {
           </button>
           <a
             href={`/_/collections/${encodeURIComponent(collectionId)}/edit`}
-            className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="inline-flex items-center gap-1.5 border border-primary dark:border-on-primary bg-surface dark:bg-surface px-3 py-2 text-sm font-medium text-on-surface dark:text-on-surface hover:bg-surface-container-low dark:hover:bg-surface-container-low"
           >
             Edit Schema
           </a>
@@ -657,13 +684,13 @@ export function RecordsBrowserPage({ collectionId }: RecordsBrowserPageProps) {
 
       {/* Active filter indicator */}
       {filter && (
-        <div className="mb-3 flex items-center gap-2 rounded-md bg-blue-50 dark:bg-blue-900/30 px-3 py-2 text-sm text-blue-700 dark:text-blue-400">
-          <span>Active filter:</span>
-          <code className="rounded bg-blue-100 dark:bg-blue-900/20 px-1.5 py-0.5 font-mono text-xs">{filter}</code>
+        <div className="mb-3 flex items-center gap-2 border border-primary dark:border-on-primary px-3 py-2 text-sm text-on-surface dark:text-on-surface">
+          <span className="text-label-sm font-bold uppercase tracking-[0.05em]">Active filter:</span>
+          <code className="border border-outline-variant dark:border-outline-variant bg-surface-container-low dark:bg-surface-container-low px-1.5 py-0.5 font-mono text-xs">{filter}</code>
           <button
             type="button"
             onClick={handleClearFilter}
-            className="ml-auto text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+            className="ml-auto text-secondary dark:text-secondary hover:text-on-surface dark:hover:text-on-surface"
             aria-label="Remove filter"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -676,19 +703,19 @@ export function RecordsBrowserPage({ collectionId }: RecordsBrowserPageProps) {
 
       {/* Error state */}
       {state.error && (
-        <div role="alert" className="mb-4 rounded-md bg-red-50 dark:bg-red-900/30 p-4">
+        <div role="alert" className="mb-4 border border-error dark:border-error p-4">
           <div className="flex">
-            <svg className="h-5 w-5 text-red-400 dark:text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg className="h-5 w-5 text-error dark:text-error" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
             <div className="ml-3">
-              <p className="text-sm text-red-700 dark:text-red-400">{state.error}</p>
+              <p className="text-sm text-error dark:text-error">{state.error}</p>
               <button
                 type="button"
                 onClick={handleRetry}
-                className="mt-1 text-sm font-medium text-red-700 dark:text-red-400 underline hover:text-red-800 dark:hover:text-red-300"
+                className="mt-1 text-sm font-medium text-on-surface dark:text-on-surface underline"
               >
                 Retry
               </button>
@@ -705,30 +732,32 @@ export function RecordsBrowserPage({ collectionId }: RecordsBrowserPageProps) {
         <>
           {state.records.items.length === 0 ? (
             <div className="py-12 text-center">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-secondary dark:text-secondary">
                 {filter ? 'No records match the current filter.' : 'No records in this collection.'}
               </p>
               {filter && (
                 <button
                   type="button"
                   onClick={handleClearFilter}
-                  className="mt-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                  className="mt-2 text-sm font-medium text-on-surface dark:text-on-surface underline"
                 >
                   Clear filter
                 </button>
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-900">
+            <div className="overflow-x-auto border border-primary dark:border-on-primary bg-surface dark:bg-surface">
+              <table className="min-w-full divide-y divide-primary dark:divide-on-primary">
+                <thead className="bg-primary dark:bg-on-primary">
                   <tr>
                     {displayedColumns.map((col) => (
                       <th
                         key={col}
                         scope="col"
-                        className="cursor-pointer select-none whitespace-nowrap px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 transition-colors hover:text-gray-700 dark:hover:text-gray-300 sm:px-6"
+                        className="cursor-pointer select-none whitespace-nowrap px-4 py-3 text-left text-label-sm font-bold uppercase tracking-[0.05em] text-on-primary dark:text-primary transition-colors-fast hover:text-on-primary/70 dark:hover:text-primary/70 sm:px-6"
                         onClick={() => handleSort(col)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort(col); } }}
+                        tabIndex={0}
                         aria-sort={
                           sort?.field === col
                             ? sort.direction === 'asc' ? 'ascending' : 'descending'
@@ -741,11 +770,11 @@ export function RecordsBrowserPage({ collectionId }: RecordsBrowserPageProps) {
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody className="divide-y divide-outline-variant dark:divide-outline-variant">
                   {state.records.items.map((record) => (
                     <tr
                       key={record.id}
-                      className="cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
+                      className="cursor-pointer transition-colors-fast hover:bg-surface-container-low dark:hover:bg-surface-container-low focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary"
                       onClick={() => setSelectedRecord(record)}
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedRecord(record); } }}
                       tabIndex={0}
@@ -755,10 +784,12 @@ export function RecordsBrowserPage({ collectionId }: RecordsBrowserPageProps) {
                       {displayedColumns.map((col) => (
                         <td
                           key={col}
-                          className="whitespace-nowrap px-4 py-3 text-sm text-gray-700 dark:text-gray-300 sm:px-6"
+                          className="whitespace-nowrap px-4 py-3 text-sm text-on-surface dark:text-on-surface sm:px-6"
                         >
                           {col === 'id' ? (
-                            <span className="font-mono text-xs text-blue-600 dark:text-blue-400">{record.id}</span>
+                            <span className="font-mono text-xs text-on-surface dark:text-on-surface">{record.id}</span>
+                          ) : col === 'created' || col === 'updated' ? (
+                            <span className="font-mono text-xs">{truncate(formatCellValue(record[col]), 80)}</span>
                           ) : (
                             truncate(formatCellValue(record[col]), 80)
                           )}

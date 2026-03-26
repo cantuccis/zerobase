@@ -1,4 +1,442 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ZEROBASE DESIGN SYSTEM — "The Architectural Monolith"
+   ═══════════════════════════════════════════════════════════════════════════
+   Brutalist, high-precision aesthetic. Zero-radius. Binary contrast.
+   Generous voids. Editorial typography. No shadows. No gradients.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Google Fonts (must precede tailwindcss import) ──────────────────────── */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap");
+
 @import "tailwindcss";
 
-/* Enable class-based dark mode (toggle .dark on <html>) */
+/* ── Dark Mode Variant ───────────────────────────────────────────────────── */
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Design Tokens (CSS Custom Properties) ───────────────────────────────── */
+:root {
+  /* Core palette */
+  --color-primary: #000000;
+  --color-on-primary: #ffffff;
+  --color-surface: #f9f9f9;
+  --color-background: #ffffff;
+  --color-on-background: #1a1c1c;
+  --color-on-surface: #1a1c1c;
+  --color-secondary: #5e5e5e;
+  --color-outline: #717171;
+  --color-outline-variant: #c6c6c6;
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #410002;
+  --color-success: #1b7d3a;
+  --color-on-success: #ffffff;
+
+  /* Surface hierarchy */
+  --color-surface-lowest: #ffffff;
+  --color-surface-container-low: #f3f3f4;
+  --color-surface-container: #eeeeee;
+  --color-surface-container-high: #e8e8e8;
+  --color-surface-container-highest: #e2e2e2;
+  --color-surface-dim: #dadada;
+  --color-surface-bright: #f9f9f9;
+  --color-surface-variant: #e2e2e2;
+  --color-on-surface-variant: #474747;
+
+  /* Extended palette from stitch samples */
+  --color-primary-container: #3b3b3b;
+  --color-on-primary-container: #ffffff;
+  --color-secondary-container: #d4d4d4;
+  --color-on-secondary-container: #1b1b1b;
+  --color-tertiary: #3b3b3b;
+  --color-on-tertiary: #e2e2e2;
+  --color-tertiary-container: #747474;
+  --color-on-tertiary-container: #ffffff;
+  --color-inverse-surface: #2f3131;
+  --color-inverse-on-surface: #f0f1f1;
+  --color-inverse-primary: #c6c6c6;
+  --color-surface-tint: #5e5e5e;
+
+  /* Font families */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* ── Dark Mode Token Overrides (inverted: black bg, white text) ──────────── */
+.dark {
+  --color-primary: #ffffff;
+  --color-on-primary: #000000;
+  --color-surface: #121212;
+  --color-background: #000000;
+  --color-on-background: #e2e2e2;
+  --color-on-surface: #e2e2e2;
+  --color-secondary: #ababab;
+  --color-outline: #999999;
+  --color-outline-variant: #474747;
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #93000a;
+  --color-on-error-container: #ffdad6;
+  --color-success: #5dda7e;
+  --color-on-success: #003912;
+
+  /* Surface hierarchy (dark) */
+  --color-surface-lowest: #000000;
+  --color-surface-container-low: #1a1a1a;
+  --color-surface-container: #1e1e1e;
+  --color-surface-container-high: #282828;
+  --color-surface-container-highest: #333333;
+  --color-surface-dim: #121212;
+  --color-surface-bright: #3a3a3a;
+  --color-surface-variant: #333333;
+  --color-on-surface-variant: #c6c6c6;
+
+  /* Extended (dark) */
+  --color-primary-container: #c6c6c6;
+  --color-on-primary-container: #000000;
+  --color-secondary-container: #474747;
+  --color-on-secondary-container: #e2e2e2;
+  --color-tertiary: #c6c6c6;
+  --color-on-tertiary: #1b1b1b;
+  --color-tertiary-container: #5e5e5e;
+  --color-on-tertiary-container: #e2e2e2;
+  --color-inverse-surface: #e2e2e2;
+  --color-inverse-on-surface: #2f3131;
+  --color-inverse-primary: #5e5e5e;
+  --color-surface-tint: #ababab;
+}
+
+/* ── Tailwind v4 Theme Configuration ─────────────────────────────────────── */
+@theme inline {
+  /* Colors — mapped from CSS custom properties */
+  --color-primary: var(--color-primary);
+  --color-on-primary: var(--color-on-primary);
+  --color-surface: var(--color-surface);
+  --color-background: var(--color-background);
+  --color-on-background: var(--color-on-background);
+  --color-on-surface: var(--color-on-surface);
+  --color-secondary: var(--color-secondary);
+  --color-outline: var(--color-outline);
+  --color-outline-variant: var(--color-outline-variant);
+  --color-error: var(--color-error);
+  --color-on-error: var(--color-on-error);
+  --color-error-container: var(--color-error-container);
+  --color-on-error-container: var(--color-on-error-container);
+  --color-success: var(--color-success);
+  --color-on-success: var(--color-on-success);
+
+  --color-surface-lowest: var(--color-surface-lowest);
+  --color-surface-container-low: var(--color-surface-container-low);
+  --color-surface-container: var(--color-surface-container);
+  --color-surface-container-high: var(--color-surface-container-high);
+  --color-surface-container-highest: var(--color-surface-container-highest);
+  --color-surface-dim: var(--color-surface-dim);
+  --color-surface-bright: var(--color-surface-bright);
+  --color-surface-variant: var(--color-surface-variant);
+  --color-on-surface-variant: var(--color-on-surface-variant);
+
+  --color-primary-container: var(--color-primary-container);
+  --color-on-primary-container: var(--color-on-primary-container);
+  --color-secondary-container: var(--color-secondary-container);
+  --color-on-secondary-container: var(--color-on-secondary-container);
+  --color-tertiary: var(--color-tertiary);
+  --color-on-tertiary: var(--color-on-tertiary);
+  --color-tertiary-container: var(--color-tertiary-container);
+  --color-on-tertiary-container: var(--color-on-tertiary-container);
+  --color-inverse-surface: var(--color-inverse-surface);
+  --color-inverse-on-surface: var(--color-inverse-on-surface);
+  --color-inverse-primary: var(--color-inverse-primary);
+  --color-surface-tint: var(--color-surface-tint);
+
+  /* Font families */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-headline: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-label: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Border radius — zero-radius principle */
+  --radius-none: 0px;
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-4xl: 0px;
+  --radius-full: 9999px;
+
+  /* Spacing scale (Architectural Monolith) */
+  --spacing-micro: 0.35rem;
+  --spacing-micro-lg: 0.7rem;
+  --spacing-standard: 1.4rem;
+  --spacing-macro-sm: 4.0rem;
+  --spacing-macro: 5.5rem;
+  --spacing-macro-lg: 7.0rem;
+}
+
+/* ── Base Styles ─────────────────────────────────────────────────────────── */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-radius: 0;
+  }
+
+  html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-on-background);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+
+  /* No shadows — brutalist principle */
+  * {
+    box-shadow: none !important;
+  }
+}
+
+/* ── Animation Tokens ───────────────────────────────────────────────────── */
+:root {
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+/* ── Reduced Motion ─────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Keyframes ──────────────────────────────────────────────────────────── */
+
+@keyframes zb-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes zb-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes zb-slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes zb-slide-down-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes zb-slide-left-in {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes zb-slide-left-out {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-100%); }
+}
+
+@keyframes zb-slide-right-in {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes zb-scale-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes zb-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+
+@keyframes zb-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes zb-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ── Animation Utility Classes ──────────────────────────────────────────── */
+
+@utility animate-fade-in {
+  animation: zb-fade-in var(--duration-normal) var(--ease-out) both;
+}
+
+@utility animate-fade-out {
+  animation: zb-fade-out var(--duration-fast) var(--ease-in) both;
+}
+
+@utility animate-slide-up {
+  animation: zb-slide-up var(--duration-normal) var(--ease-out) both;
+}
+
+@utility animate-slide-down-in {
+  animation: zb-slide-down-in var(--duration-fast) var(--ease-out) both;
+}
+
+@utility animate-slide-left-in {
+  animation: zb-slide-left-in var(--duration-normal) var(--ease-out) both;
+}
+
+@utility animate-slide-left-out {
+  animation: zb-slide-left-out var(--duration-normal) var(--ease-in) both;
+}
+
+@utility animate-slide-right-in {
+  animation: zb-slide-right-in var(--duration-normal) var(--ease-out) both;
+}
+
+@utility animate-scale-in {
+  animation: zb-scale-in var(--duration-normal) var(--ease-out) both;
+}
+
+@utility animate-pulse-subtle {
+  animation: zb-pulse 1.5s var(--ease-in-out) infinite;
+}
+
+@utility animate-spin {
+  animation: zb-spin 0.8s linear infinite;
+}
+
+@utility animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-container-low) 25%,
+    var(--color-surface-container-high) 50%,
+    var(--color-surface-container-low) 75%
+  );
+  background-size: 200% 100%;
+  animation: zb-shimmer 1.5s var(--ease-in-out) infinite;
+}
+
+/* ── Transition Utility Classes ─────────────────────────────────────────── */
+
+@utility transition-colors-fast {
+  transition-property: color, background-color, border-color;
+  transition-duration: var(--duration-fast);
+  transition-timing-function: var(--ease-out);
+}
+
+@utility transition-opacity-fast {
+  transition-property: opacity;
+  transition-duration: var(--duration-fast);
+  transition-timing-function: var(--ease-out);
+}
+
+@utility transition-transform-fast {
+  transition-property: transform;
+  transition-duration: var(--duration-fast);
+  transition-timing-function: var(--ease-out);
+}
+
+/* ── Custom Scrollbar ────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-primary) var(--color-background);
+}
+
+/* ── Material Symbols Configuration ──────────────────────────────────────── */
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  vertical-align: middle;
+}
+
+/* ── Typography Utility Classes ──────────────────────────────────────────── */
+@utility text-display-lg {
+  font-family: var(--font-sans);
+  font-size: 3.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+@utility text-headline-lg {
+  font-family: var(--font-sans);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+@utility text-title-md {
+  font-family: var(--font-sans);
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.3;
+}
+
+@utility text-body-lg {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+
+@utility text-label-md {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+@utility text-label-sm {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+/* ── Monospace Data Utility ──────────────────────────────────────────────── */
+@utility font-data {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}

@@ -422,6 +422,6 @@ describe('FileUpload error state', () => {
   it('applies error styling when hasError is true', () => {
     renderFileUpload({ hasError: true });
     const dropzone = screen.getByTestId('file-upload-dropzone-avatar');
-    expect(dropzone.className).toContain('border-red-300');
+    expect(dropzone.className).toContain('border-error');
   });
 });

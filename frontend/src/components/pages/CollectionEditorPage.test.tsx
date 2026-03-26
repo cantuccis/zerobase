@@ -114,7 +114,7 @@ describe('CollectionEditorPage', () => {
 
     it('shows empty fields state initially', () => {
       renderCreate();
-      expect(screen.getByText('No fields yet. Click "Add Field" to start.')).toBeInTheDocument();
+      expect(screen.getByText(/No fields yet\. Click \u201CAdd Field\u201D to start\./)).toBeInTheDocument();
     });
 
     it('adds a new field when clicking Add Field', async () => {
@@ -152,7 +152,7 @@ describe('CollectionEditorPage', () => {
     it('shows API preview panel', () => {
       renderCreate();
       expect(screen.getByTestId('api-preview')).toBeInTheDocument();
-      expect(screen.getByText('API Endpoints Preview')).toBeInTheDocument();
+      expect(screen.getByText('API Endpoints')).toBeInTheDocument();
     });
 
     it('API preview shows auth endpoints when auth type is selected', async () => {
@@ -260,7 +260,7 @@ describe('CollectionEditorPage', () => {
       await user.type(screen.getByTestId('collection-name'), 'test');
       await user.click(screen.getByTestId('save-collection'));
 
-      expect(screen.getByText('Saving...')).toBeInTheDocument();
+      expect(screen.getByText('Saving\u2026')).toBeInTheDocument();
       expect(screen.getByTestId('save-collection')).toBeDisabled();
 
       resolveCreate({ ...EXISTING_COLLECTION, id: 'new_id' });
@@ -712,7 +712,7 @@ describe('CollectionEditorPage', () => {
       // listRule should be unlocked and empty (public)
       expect(screen.getByTestId('rule-input-listRule')).toBeInTheDocument();
       const listBadge = within(screen.getByTestId('rule-field-listRule')).getByTestId('rule-badge-listRule');
-      expect(listBadge).toHaveTextContent('Public');
+      expect(listBadge).toHaveTextContent(/PUBLIC/i);
 
       // viewRule should show the expression
       const viewInput = screen.getByTestId('rule-input-viewRule') as HTMLTextAreaElement;

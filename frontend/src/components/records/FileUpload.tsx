@@ -206,16 +206,16 @@ export function FileUpload({
         onClick={canAddMore ? handleBrowseClick : undefined}
         onKeyDown={canAddMore ? handleBrowseKeyDown : undefined}
         className={`
-          relative flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed
-          px-6 py-8 text-center transition-colors
-          ${disabled ? 'cursor-not-allowed bg-gray-50 dark:bg-gray-900 opacity-60' : canAddMore ? 'cursor-pointer' : 'cursor-default bg-gray-50 dark:bg-gray-900'}
-          ${isDragOver ? 'border-blue-500 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30' : hasError ? 'border-red-300 dark:border-red-700 bg-red-50/30 dark:bg-red-900/30' : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700'}
+          relative flex flex-col items-center justify-center gap-2 border border-dashed
+          px-6 py-8 text-center
+          ${disabled ? 'cursor-not-allowed bg-surface-dim dark:bg-surface-dim opacity-60' : canAddMore ? 'cursor-pointer' : 'cursor-default bg-surface-dim dark:bg-surface-dim'}
+          ${isDragOver ? 'border-primary dark:border-on-primary bg-surface-container-low dark:bg-surface-container-low' : hasError ? 'border-error dark:border-error' : 'border-primary dark:border-on-primary hover:bg-surface-container-low dark:hover:bg-surface-container-low'}
         `}
         data-testid={`file-upload-dropzone-${name}`}
       >
         {/* Upload icon */}
         <svg
-          className={`h-10 w-10 ${isDragOver ? 'text-blue-500' : 'text-gray-400 dark:text-gray-500'}`}
+          className={`h-10 w-10 ${isDragOver ? 'text-primary dark:text-on-primary' : 'text-primary dark:text-on-primary'}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -230,16 +230,16 @@ export function FileUpload({
         </svg>
 
         {isDragOver ? (
-          <p className="text-sm font-medium text-blue-600 dark:text-blue-400" data-testid="drop-active-text">
+          <p className="text-sm font-medium text-on-surface dark:text-on-surface" data-testid="drop-active-text">
             Drop file{multiple ? 's' : ''} here
           </p>
         ) : (
           <>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              <span className="font-medium text-blue-600 dark:text-blue-400">Click to browse</span>
+            <p className="text-sm text-on-surface-variant dark:text-on-surface-variant">
+              <span className="font-medium text-on-surface dark:text-on-surface underline">Click to browse</span>
               {' '}or drag and drop
             </p>
-            <p className="text-xs text-gray-400 dark:text-gray-500">
+            <p className="text-xs text-secondary dark:text-secondary">
               {options.mimeTypes.length > 0
                 ? options.mimeTypes.join(', ')
                 : 'All file types accepted'}
@@ -267,13 +267,13 @@ export function FileUpload({
       {/* Upload progress bar */}
       {uploadProgress !== null && (
         <div className="space-y-1" data-testid={`file-upload-progress-${name}`}>
-          <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+          <div className="flex items-center justify-between text-xs text-secondary dark:text-secondary">
             <span>Uploading…</span>
             <span>{Math.round(uploadProgress)}%</span>
           </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-600">
+          <div className="h-1 w-full overflow-hidden bg-surface-container dark:bg-surface-container">
             <div
-              className="h-full rounded-full bg-blue-500 transition-all duration-300"
+              className="h-full bg-primary dark:bg-on-primary"
               style={{ width: `${Math.min(100, Math.max(0, uploadProgress))}%` }}
               role="progressbar"
               aria-valuenow={Math.round(uploadProgress)}
@@ -292,7 +292,7 @@ export function FileUpload({
           {validationErrors.map((err, i) => (
             <div
               key={`${err.file.name}-${err.reason}-${i}`}
-              className="flex items-start gap-2 rounded-md bg-red-50 dark:bg-red-900/30 px-3 py-2 text-xs text-red-700 dark:text-red-400"
+              className="flex items-start gap-2 border border-error dark:border-error px-3 py-2 text-xs text-error dark:text-error"
               role="alert"
             >
               <svg className="mt-0.5 h-3.5 w-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
@@ -308,7 +308,7 @@ export function FileUpload({
           <button
             type="button"
             onClick={clearErrors}
-            className="text-xs text-gray-500 dark:text-gray-400 underline hover:text-gray-700 dark:hover:text-gray-300"
+            className="text-xs text-secondary dark:text-secondary underline hover:text-on-surface dark:hover:text-on-surface"
             data-testid={`file-upload-clear-errors-${name}`}
           >
             Dismiss errors
@@ -319,15 +319,15 @@ export function FileUpload({
       {/* Existing files */}
       {existingFiles.length > 0 && (
         <div className="space-y-1" data-testid={`file-upload-existing-${name}`}>
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Existing files</p>
+          <p className="text-label-sm font-bold uppercase tracking-[0.05em] text-secondary dark:text-secondary">Existing files</p>
           <div className="flex flex-wrap gap-2">
             {existingFiles.map((filename) => (
               <span
                 key={filename}
-                className="inline-flex items-center gap-1.5 rounded-md bg-gray-100 dark:bg-gray-700 px-2.5 py-1.5 text-xs text-gray-700 dark:text-gray-300"
+                className="inline-flex items-center gap-1.5 border border-outline-variant dark:border-outline-variant bg-surface-container-low dark:bg-surface-container-low px-2.5 py-1.5 text-xs text-on-surface dark:text-on-surface"
                 data-testid={`existing-file-${filename}`}
               >
-                <svg className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                <svg className="h-3.5 w-3.5 text-secondary dark:text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                 </svg>
                 {filename}
@@ -335,7 +335,7 @@ export function FileUpload({
                   <button
                     type="button"
                     onClick={() => removeExistingFile(filename)}
-                    className="ml-0.5 rounded p-0.5 text-gray-400 dark:text-gray-500 transition-colors hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-600 dark:hover:text-gray-400"
+                    className="ml-0.5 p-0.5 text-secondary dark:text-secondary hover:bg-surface-container dark:hover:bg-surface-container hover:text-on-surface dark:hover:text-on-surface"
                     aria-label={`Remove ${filename}`}
                     data-testid={`remove-existing-${filename}`}
                   >
@@ -353,7 +353,7 @@ export function FileUpload({
       {/* New file previews */}
       {previews.length > 0 && (
         <div className="space-y-1" data-testid={`file-upload-previews-${name}`}>
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+          <p className="text-label-sm font-bold uppercase tracking-[0.05em] text-secondary dark:text-secondary">
             New file{previews.length > 1 ? 's' : ''} ({previews.length})
           </p>
           <div className="flex flex-wrap gap-3">
@@ -367,15 +367,15 @@ export function FileUpload({
                   <img
                     src={preview.url}
                     alt={`Preview of ${preview.file.name}`}
-                    className="h-20 w-20 rounded-lg border border-gray-200 dark:border-gray-700 object-cover"
+                    className="h-20 w-20 border border-primary dark:border-on-primary object-cover"
                     data-testid={`file-preview-image-${index}`}
                   />
                 ) : (
                   <div
-                    className="flex h-20 w-20 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
+                    className="flex h-20 w-20 items-center justify-center border border-primary dark:border-on-primary bg-surface-container-low dark:bg-surface-container-low"
                     data-testid={`file-preview-icon-${index}`}
                   >
-                    <svg className="h-8 w-8 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+                    <svg className="h-8 w-8 text-secondary dark:text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                     </svg>
                   </div>
@@ -384,7 +384,7 @@ export function FileUpload({
                 <button
                   type="button"
                   onClick={() => removeFile(index)}
-                  className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
+                  className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center bg-primary dark:bg-on-primary text-on-primary dark:text-primary opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
                   aria-label={`Remove ${preview.file.name}`}
                   data-testid={`remove-file-${index}`}
                 >
@@ -393,10 +393,10 @@ export function FileUpload({
                   </svg>
                 </button>
                 {/* File info */}
-                <p className="mt-1 max-w-[80px] truncate text-[10px] text-gray-500 dark:text-gray-400" title={preview.file.name}>
+                <p className="mt-1 max-w-[80px] truncate text-[10px] text-on-surface-variant dark:text-on-surface-variant" title={preview.file.name}>
                   {preview.file.name}
                 </p>
-                <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                <p className="text-[10px] text-secondary dark:text-secondary">
                   {formatFileSize(preview.file.size)}
                 </p>
               </div>
@@ -407,7 +407,7 @@ export function FileUpload({
 
       {/* File count indicator */}
       {multiple && options.maxSelect > 0 && (
-        <p className="text-xs text-gray-400 dark:text-gray-500" data-testid={`file-upload-count-${name}`}>
+        <p className="text-xs text-secondary dark:text-secondary" data-testid={`file-upload-count-${name}`}>
           {totalFiles}/{options.maxSelect} file{options.maxSelect > 1 ? 's' : ''}
         </p>
       )}

@@ -138,7 +138,7 @@ describe('WebhooksPage', () => {
       mockListWebhooks.mockResolvedValue([]);
       render(<WebhooksPage />);
       await waitFor(() => {
-        expect(screen.getByText('No webhooks configured')).toBeInTheDocument();
+        expect(screen.getByText('NO WEBHOOKS CONFIGURED')).toBeInTheDocument();
       });
     });
 
@@ -155,8 +155,8 @@ describe('WebhooksPage', () => {
     it('shows active/disabled status badges', async () => {
       render(<WebhooksPage />);
       await waitFor(() => {
-        expect(screen.getByText('Active')).toBeInTheDocument();
-        expect(screen.getByText('Disabled')).toBeInTheDocument();
+        expect(screen.getByText('ACTIVE')).toBeInTheDocument();
+        expect(screen.getByText('INACTIVE')).toBeInTheDocument();
       });
     });
 
@@ -173,7 +173,7 @@ describe('WebhooksPage', () => {
     it('renders collection filter dropdown', async () => {
       render(<WebhooksPage />);
       await waitFor(() => {
-        expect(screen.getByLabelText('Collection:')).toBeInTheDocument();
+        expect(screen.getByLabelText('Collection')).toBeInTheDocument();
       });
     });
 
@@ -184,7 +184,7 @@ describe('WebhooksPage', () => {
         expect(screen.getByText('https://example.com/hook1')).toBeInTheDocument();
       });
 
-      const select = screen.getByLabelText('Collection:');
+      const select = screen.getByLabelText('Collection');
       await user.selectOptions(select, 'posts');
 
       await waitFor(() => {
@@ -228,12 +228,14 @@ describe('WebhooksPage', () => {
       await user.clear(urlInput);
       await user.type(urlInput, 'https://new-hook.com/endpoint');
 
-      // Check delete event
-      const deleteCheckbox = screen.getByRole('checkbox', { name: /delete/i });
-      await user.click(deleteCheckbox);
+      // Toggle DELETE event (toggle button with aria-pressed)
+      const deleteToggle = screen.getByRole('button', { name: /delete/i, pressed: false });
+      await user.click(deleteToggle);
 
       // Submit
-      await user.click(screen.getByRole('button', { name: /create/i }));
+      // The submit button text is "Create"
+      const submitButtons = screen.getAllByRole('button', { name: /^create$/i });
+      await user.click(submitButtons[submitButtons.length - 1]);
 
       await waitFor(() => {
         expect(mockCreateWebhook).toHaveBeenCalledWith(
@@ -269,7 +271,8 @@ describe('WebhooksPage', () => {
       await user.clear(urlInput);
       await user.type(urlInput, 'https://bad-url.com/test');
 
-      await user.click(screen.getByRole('button', { name: /create/i }));
+      const submitButtons = screen.getAllByRole('button', { name: /^create$/i });
+      await user.click(submitButtons[submitButtons.length - 1]);
 
       await waitFor(() => {
         expect(screen.getByText('Invalid URL format')).toBeInTheDocument();
@@ -330,7 +333,7 @@ describe('WebhooksPage', () => {
       await user.clear(urlInput);
       await user.type(urlInput, 'https://updated.com/hook');
 
-      await user.click(screen.getByRole('button', { name: /update/i }));
+      await user.click(screen.getByRole('button', { name: 'Update' }));
 
       await waitFor(() => {
         expect(mockUpdateWebhook).toHaveBeenCalledWith(
@@ -404,10 +407,10 @@ describe('WebhooksPage', () => {
 
       render(<WebhooksPage />);
       await waitFor(() => {
-        expect(screen.getByText('Active')).toBeInTheDocument();
+        expect(screen.getByText('ACTIVE')).toBeInTheDocument();
       });
 
-      await user.click(screen.getByText('Active'));
+      await user.click(screen.getByText('ACTIVE'));
 
       await waitFor(() => {
         expect(mockUpdateWebhook).toHaveBeenCalledWith('wh_1', { enabled: false });
@@ -517,8 +520,8 @@ describe('WebhooksPage', () => {
 
       await waitFor(() => {
         const dialog = screen.getByRole('dialog', { name: /delivery history/i });
-        expect(within(dialog).getByText('success')).toBeInTheDocument();
-        expect(within(dialog).getByText('failed')).toBeInTheDocument();
+        expect(within(dialog).getByText('SUCCESS')).toBeInTheDocument();
+        expect(within(dialog).getByText('FAILED')).toBeInTheDocument();
       });
     });
 
@@ -537,7 +540,7 @@ describe('WebhooksPage', () => {
       await user.click(historyButtons[0]);
 
       await waitFor(() => {
-        expect(screen.getByText('No delivery history yet.')).toBeInTheDocument();
+        expect(screen.getByText('NO DELIVERY HISTORY')).toBeInTheDocument();
       });
     });
 
@@ -590,7 +593,7 @@ describe('WebhooksPage', () => {
       render(<WebhooksPage />);
 
       await waitFor(() => {
-        expect(screen.getByText('No webhooks configured')).toBeInTheDocument();
+        expect(screen.getByText('NO WEBHOOKS CONFIGURED')).toBeInTheDocument();
       });
 
       // There are two "Add Webhook" buttons: header and empty state. Click the last one (empty state).

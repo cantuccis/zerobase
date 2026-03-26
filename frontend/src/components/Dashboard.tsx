@@ -9,7 +9,7 @@ import { DashboardLayout } from './DashboardLayout';
 export function Dashboard() {
   return (
     <DashboardLayout currentPath="/_/" pageTitle="Dashboard">
-      <p className="text-gray-600">Welcome to the Zerobase admin dashboard.</p>
+      <p className="text-secondary">Welcome to the Zerobase admin dashboard.</p>
     </DashboardLayout>
   );
 }

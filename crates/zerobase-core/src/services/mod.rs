@@ -15,7 +15,9 @@ pub mod webauthn_credential;
 
 pub use backup_service::BackupService;
 pub use collection_service::CollectionService;
-pub use expand::{expand_record, expand_records, parse_expand, ExpandPath, MAX_EXPAND_DEPTH};
+pub use expand::{
+    expand_record, expand_records, parse_expand, ExpandAuth, ExpandPath, MAX_EXPAND_DEPTH,
+};
 pub use log_service::LogService;
 pub use record_service::{
     parse_fields, parse_sort, project_fields, project_record_list, validate_and_filter_fields,

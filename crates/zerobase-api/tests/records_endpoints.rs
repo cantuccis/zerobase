@@ -2294,3 +2294,192 @@ async fn expand_back_relation_no_matches_no_expand_field() {
         "no expand field when back-relation yields no results"
     );
 }
+
+// ── Expand view_rule enforcement integration tests ──────────────────────────
+
+/// Build collections where `articles.author` is a relation to `authors`,
+/// but `authors` has a restrictive view_rule.
+fn expand_view_rule_test_collections(author_view_rule: Option<String>) -> Vec<Collection> {
+    let mut authors = Collection::base(
+        "authors",
+        vec![
+            Field::new(
+                "name",
+                FieldType::Text(TextOptions {
+                    min_length: 0,
+                    max_length: 200,
+                    pattern: None,
+                    searchable: false,
+                }),
+            ),
+        ],
+    );
+    authors.rules = ApiRules {
+        view_rule: author_view_rule,
+        list_rule: Some(String::new()),
+        create_rule: Some(String::new()),
+        update_rule: Some(String::new()),
+        delete_rule: Some(String::new()),
+        manage_rule: None,
+    };
+
+    let mut articles = Collection::base(
+        "articles",
+        vec![
+            Field::new(
+                "title",
+                FieldType::Text(TextOptions {
+                    min_length: 0,
+                    max_length: 200,
+                    pattern: None,
+                    searchable: false,
+                }),
+            ),
+            Field::new(
+                "author",
+                FieldType::Relation(RelationOptions {
+                    collection_id: "authors".to_string(),
+                    max_select: 1,
+                    ..Default::default()
+                }),
+            ),
+        ],
+    );
+    articles.rules = ApiRules::open();
+
+    vec![authors, articles]
+}
+
+async fn spawn_expand_view_rule_app(
+    author_view_rule: Option<String>,
+) -> (String, tokio::task::JoinHandle<()>) {
+    let schema = MockSchemaLookup::with(expand_view_rule_test_collections(author_view_rule));
+    let repo = MockRecordRepo::with_multi_records(vec![
+        (
+            "authors",
+            vec![make_author("author1_________", "Alice")],
+        ),
+        (
+            "articles",
+            vec![make_article("article1________", "Test Article", "author1_________")],
+        ),
+    ]);
+    spawn_record_app(schema, repo).await
+}
+
+#[tokio::test]
+async fn expand_locked_view_rule_hides_relation_for_anonymous() {
+    // authors has view_rule = None (locked → superusers only)
+    let (addr, _handle) = spawn_expand_view_rule_app(None).await;
+    let client = reqwest::Client::new();
+
+    // Anonymous request (no auth header)
+    let resp = client
+        .get(format!(
+            "{addr}/api/collections/articles/records/article1________?expand=author"
+        ))
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(resp.status(), StatusCode::OK);
+    let body: Value = resp.json().await.unwrap();
+    assert_eq!(body["title"], "Test Article");
+
+    // The expand should be absent or the author entry should not be present,
+    // because the anonymous user cannot view authors.
+    let expand = body.get("expand");
+    let has_author = expand
+        .and_then(|e| e.as_object())
+        .map(|e| e.contains_key("author"))
+        .unwrap_or(false);
+    assert!(
+        !has_author,
+        "locked view_rule on target collection must hide expanded relation for anonymous user"
+    );
+}
+
+#[tokio::test]
+async fn expand_locked_view_rule_visible_to_superuser() {
+    // authors has view_rule = None (locked → superusers only)
+    let (addr, _handle) = spawn_expand_view_rule_app(None).await;
+    let client = reqwest::Client::new();
+
+    // Superuser request
+    let resp = client
+        .get(format!(
+            "{addr}/api/collections/articles/records/article1________?expand=author"
+        ))
+        .header("Authorization", "Bearer SUPERUSER")
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(resp.status(), StatusCode::OK);
+    let body: Value = resp.json().await.unwrap();
+    assert_eq!(body["title"], "Test Article");
+
+    // Superuser should see the expanded author.
+    let expand = body.get("expand").expect("superuser must see expand");
+    assert_eq!(
+        expand["author"]["name"], "Alice",
+        "superuser must see expanded author record despite locked view_rule"
+    );
+}
+
+#[tokio::test]
+async fn expand_open_view_rule_visible_to_anonymous() {
+    // authors has view_rule = Some("") (open to everyone)
+    let (addr, _handle) = spawn_expand_view_rule_app(Some(String::new())).await;
+    let client = reqwest::Client::new();
+
+    // Anonymous request
+    let resp = client
+        .get(format!(
+            "{addr}/api/collections/articles/records/article1________?expand=author"
+        ))
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(resp.status(), StatusCode::OK);
+    let body: Value = resp.json().await.unwrap();
+
+    let expand = body
+        .get("expand")
+        .expect("anonymous must see expand when view_rule is open");
+    assert_eq!(expand["author"]["name"], "Alice");
+}
+
+#[tokio::test]
+async fn expand_locked_view_rule_list_hides_relations_for_anonymous() {
+    // Test that the list endpoint also respects view_rule on expansions.
+    let (addr, _handle) = spawn_expand_view_rule_app(None).await;
+    let client = reqwest::Client::new();
+
+    // Anonymous list request
+    let resp = client
+        .get(format!(
+            "{addr}/api/collections/articles/records?expand=author"
+        ))
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(resp.status(), StatusCode::OK);
+    let body: Value = resp.json().await.unwrap();
+    let items = body["items"].as_array().expect("items must be array");
+    assert!(!items.is_empty());
+
+    for item in items {
+        let has_author = item
+            .get("expand")
+            .and_then(|e| e.as_object())
+            .map(|e| e.contains_key("author"))
+            .unwrap_or(false);
+        assert!(
+            !has_author,
+            "list endpoint must not expand relations to locked collections for anonymous"
+        );
+    }
+}

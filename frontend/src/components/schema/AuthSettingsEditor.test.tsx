@@ -39,16 +39,6 @@ describe('AuthSettingsEditor', () => {
     expect(screen.getByTestId('auth-settings-editor')).toBeInTheDocument();
   });
 
-  it('shows the "Auth Settings" heading', () => {
-    renderEditor();
-    expect(screen.getByText('Auth Settings')).toBeInTheDocument();
-  });
-
-  it('shows description text', () => {
-    renderEditor();
-    expect(screen.getByText(/Configure authentication methods/)).toBeInTheDocument();
-  });
-
   // ── Auth Methods ───────────────────────────────────────────────────────
 
   it('shows all four auth method toggles', () => {

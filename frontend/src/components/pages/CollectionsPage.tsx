@@ -15,21 +15,15 @@ interface CollectionsState {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const TYPE_LABELS: Record<CollectionType, string> = {
-  base: 'Base',
-  auth: 'Auth',
-  view: 'View',
-};
-
-const TYPE_COLORS: Record<CollectionType, string> = {
-  base: 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300',
-  auth: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300',
-  view: 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300',
+  base: 'BASE',
+  auth: 'AUTH',
+  view: 'VIEW',
 };
 
 function CollectionTypeBadge({ type }: { type: CollectionType }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${TYPE_COLORS[type]}`}
+      className="inline-flex items-center border border-primary dark:border-primary px-2 py-0.5 text-label-sm text-on-surface dark:text-on-surface"
       data-testid={`badge-${type}`}
     >
       {TYPE_LABELS[type]}
@@ -99,31 +93,31 @@ function DeleteConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-primary/30 dark:bg-primary/60 animate-fade-in"
       role="dialog"
       aria-modal="true"
       aria-labelledby="delete-dialog-title"
       ref={dialogRef}
     >
-      <div className="mx-4 w-full max-w-md rounded-lg bg-white dark:bg-gray-800 p-6 shadow-xl dark:shadow-gray-900/20">
-        <h3 id="delete-dialog-title" className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Delete Collection
+      <div className="mx-4 w-full max-w-md border border-primary dark:border-primary bg-surface-lowest dark:bg-surface-container p-6 animate-scale-in">
+        <h3 id="delete-dialog-title" className="text-title-md text-on-surface dark:text-on-surface">
+          DELETE COLLECTION
         </h3>
 
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          Are you sure you want to delete <strong>{collection.name}</strong>? This action cannot be
+        <p className="mt-3 text-sm text-on-surface-variant dark:text-on-surface-variant">
+          Are you sure you want to delete <strong className="text-on-surface dark:text-on-surface">{collection.name}</strong>? This action cannot be
           undone and all records in this collection will be permanently removed.
         </p>
 
         {/* Record count warning */}
         {loadingCount && (
-          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400" data-testid="loading-record-count">
+          <p className="mt-3 text-sm text-secondary dark:text-secondary" data-testid="loading-record-count">
             Checking record count&hellip;
           </p>
         )}
         {!loadingCount && recordCount !== null && recordCount > 0 && (
           <div
-            className="mt-3 rounded-md bg-amber-50 dark:bg-amber-900/30 px-3 py-2 text-sm text-amber-800 dark:text-amber-300"
+            className="mt-3 border border-error dark:border-error bg-error-container dark:bg-on-error px-3 py-2 text-sm text-on-error-container dark:text-error"
             role="alert"
             data-testid="record-count-warning"
           >
@@ -132,7 +126,7 @@ function DeleteConfirmDialog({
           </div>
         )}
         {!loadingCount && recordCount !== null && recordCount === 0 && (
-          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400" data-testid="no-records-note">
+          <p className="mt-3 text-sm text-secondary dark:text-secondary" data-testid="no-records-note">
             This collection has no records.
           </p>
         )}
@@ -140,7 +134,7 @@ function DeleteConfirmDialog({
         {/* Name confirmation for large collections */}
         {isDangerous && (
           <div className="mt-4">
-            <label htmlFor="confirm-collection-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="confirm-collection-name" className="block text-label-md text-on-surface dark:text-on-surface mb-2">
               Type <strong>{collection.name}</strong> to confirm
             </label>
             <input
@@ -152,7 +146,7 @@ function DeleteConfirmDialog({
               disabled={deleting}
               autoComplete="off"
               spellCheck={false}
-              className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-red-500 focus-visible:outline-none focus-visible:ring-1 focus:ring-red-500 disabled:opacity-50"
+              className="w-full border border-primary dark:border-primary bg-surface-lowest dark:bg-surface-lowest px-4 py-3 text-sm text-on-surface dark:text-on-surface placeholder:text-outline dark:placeholder:text-outline focus:border-2 focus:outline-none disabled:opacity-50 disabled:bg-surface-dim dark:disabled:bg-surface-dim"
               data-testid="confirm-name-input"
             />
           </div>
@@ -163,18 +157,18 @@ function DeleteConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={deleting}
-            className="rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+            className="border border-primary dark:border-primary bg-transparent px-4 py-2 text-label-md text-on-surface dark:text-on-surface hover:bg-primary hover:text-on-primary dark:hover:bg-primary dark:hover:text-on-primary disabled:opacity-50 cursor-pointer transition-colors-fast"
           >
-            Cancel
+            CANCEL
           </button>
           <button
             type="button"
             onClick={onConfirm}
             disabled={deleting || !canDelete}
-            className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50"
+            className="bg-error dark:bg-error px-4 py-2 text-label-md text-on-error dark:text-on-error hover:opacity-90 disabled:opacity-50 cursor-pointer"
             data-testid="confirm-delete-btn"
           >
-            {deleting ? 'Deleting...' : 'Delete'}
+            {deleting ? 'DELETING\u2026' : 'DELETE'}
           </button>
         </div>
       </div>
@@ -187,38 +181,23 @@ function DeleteConfirmDialog({
 function EmptyState({ hasSearch, onClear }: { hasSearch: boolean; onClear: () => void }) {
   if (hasSearch) {
     return (
-      <div className="py-12 text-center">
-        <p className="text-sm text-gray-500 dark:text-gray-400">No collections match your search.</p>
+      <div className="py-16 text-center">
+        <p className="text-sm text-secondary dark:text-secondary">No collections match your search.</p>
         <button
           type="button"
           onClick={onClear}
-          className="mt-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+          className="mt-2 text-label-md text-on-surface dark:text-on-surface underline hover:no-underline cursor-pointer"
         >
-          Clear search
+          CLEAR SEARCH
         </button>
       </div>
     );
   }
 
   return (
-    <div className="py-12 text-center">
-      <svg
-        className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <rect x="3" y="3" width="7" height="7" rx="1" />
-        <rect x="14" y="3" width="7" height="7" rx="1" />
-        <rect x="3" y="14" width="7" height="7" rx="1" />
-        <rect x="14" y="14" width="7" height="7" rx="1" />
-      </svg>
-      <h3 className="mt-2 text-sm font-semibold text-gray-900 dark:text-gray-100">No collections</h3>
-      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Get started by creating your first collection.</p>
+    <div className="py-16 text-center">
+      <p className="text-label-md text-secondary dark:text-secondary mb-2">NO COLLECTIONS</p>
+      <p className="text-sm text-on-surface-variant dark:text-on-surface-variant">Get started by creating your first collection.</p>
     </div>
   );
 }
@@ -227,15 +206,25 @@ function EmptyState({ hasSearch, onClear }: { hasSearch: boolean; onClear: () =>
 
 function LoadingSkeleton() {
   return (
-    <div className="space-y-3" data-testid="loading-skeleton">
+    <div className="border border-primary dark:border-primary animate-pulse-subtle" data-testid="loading-skeleton">
+      {/* Header skeleton */}
+      <div className="bg-primary dark:bg-primary px-4 py-3 sm:px-6">
+        <div className="flex gap-8">
+          <div className="h-3 w-20 bg-on-primary/20 dark:bg-on-primary/20" />
+          <div className="h-3 w-16 bg-on-primary/20 dark:bg-on-primary/20" />
+          <div className="h-3 w-16 bg-on-primary/20 dark:bg-on-primary/20" />
+          <div className="ml-auto h-3 w-20 bg-on-primary/20 dark:bg-on-primary/20" />
+        </div>
+      </div>
+      {/* Row skeletons */}
       {[1, 2, 3].map((i) => (
-        <div key={i} className="animate-pulse rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+        <div key={i} className="border-b border-primary dark:border-primary px-4 py-4 sm:px-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-5 w-32 rounded bg-gray-200 dark:bg-gray-600" />
-              <div className="h-5 w-14 rounded-full bg-gray-200 dark:bg-gray-600" />
+            <div className="flex items-center gap-6">
+              <div className="h-4 w-32 bg-surface-container dark:bg-surface-container-high" />
+              <div className="h-5 w-14 border border-outline-variant dark:border-outline-variant" />
             </div>
-            <div className="h-5 w-20 rounded bg-gray-200 dark:bg-gray-600" />
+            <div className="h-4 w-20 bg-surface-container dark:bg-surface-container-high" />
           </div>
         </div>
       ))}
@@ -357,38 +346,48 @@ export function CollectionsPage() {
 
   return (
     <DashboardLayout currentPath="/_/collections" pageTitle="Collections">
+      {/* Page heading */}
+      <h1 className="text-display-lg text-on-surface dark:text-on-surface mb-2">
+        Collections
+      </h1>
+      <p className="text-body-lg text-on-surface-variant dark:text-on-surface-variant mb-10">
+        Manage your data collections and schemas.
+      </p>
+
       {/* Toolbar */}
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative w-full sm:max-w-xs">
-          <label htmlFor="collection-search" className="sr-only">
-            Search collections
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="w-full sm:max-w-xs">
+          <label htmlFor="collection-search" className="block text-label-md text-on-surface dark:text-on-surface mb-2">
+            SEARCH
           </label>
-          <svg
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            id="collection-search"
-            type="search"
-            placeholder="Search collections..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 py-2 pl-10 pr-3 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus-visible:outline-none focus-visible:ring-1 focus:ring-blue-500"
-          />
+          <div className="relative">
+            <svg
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-outline dark:text-outline"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              id="collection-search"
+              type="search"
+              placeholder="Search collections\u2026"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full border border-primary dark:border-primary bg-surface-lowest dark:bg-surface-lowest py-3 pl-10 pr-3 text-sm text-on-surface dark:text-on-surface placeholder:text-outline dark:placeholder:text-outline focus:border-2 focus:outline-none"
+            />
+          </div>
         </div>
 
         <a
           href="/_/collections/new"
-          className="inline-flex items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:hover:bg-blue-600"
+          className="inline-flex items-center justify-center gap-2 bg-primary dark:bg-primary px-6 py-3 text-label-md text-on-primary dark:text-on-primary hover:opacity-90 active:scale-[0.98] cursor-pointer"
         >
           <svg
             className="h-4 w-4"
@@ -403,16 +402,16 @@ export function CollectionsPage() {
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          New Collection
+          NEW COLLECTION
         </a>
       </div>
 
       {/* Error state */}
       {state.error && (
-        <div role="alert" className="mb-4 rounded-md bg-red-50 dark:bg-red-900/30 p-4">
-          <div className="flex">
+        <div role="alert" className="mb-4 border border-error dark:border-error bg-error-container dark:bg-on-error px-4 py-3">
+          <div className="flex items-start gap-3">
             <svg
-              className="h-5 w-5 text-red-400 dark:text-red-500"
+              className="h-5 w-5 text-error dark:text-error shrink-0 mt-0.5"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -425,14 +424,14 @@ export function CollectionsPage() {
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            <div className="ml-3">
-              <p className="text-sm text-red-700 dark:text-red-400">{state.error}</p>
+            <div>
+              <p className="text-sm text-on-error-container dark:text-error">{state.error}</p>
               <button
                 type="button"
                 onClick={fetchCollections}
-                className="mt-1 text-sm font-medium text-red-700 dark:text-red-400 underline hover:text-red-800 dark:hover:text-red-300"
+                className="mt-1 text-label-md text-on-error-container dark:text-error underline hover:no-underline cursor-pointer"
               >
-                Retry
+                RETRY
               </button>
             </div>
           </div>
@@ -442,19 +441,19 @@ export function CollectionsPage() {
       {/* Success message */}
       {successMessage && (
         <div
-          className="mb-4 rounded-md bg-green-50 dark:bg-green-900/30 p-4"
+          className="mb-4 border border-primary dark:border-primary bg-surface-container-low dark:bg-surface-container px-4 py-3"
           role="status"
           aria-live="polite"
           data-testid="success-message"
         >
-          <p className="text-sm text-green-700 dark:text-green-400">{successMessage}</p>
+          <p className="text-sm text-on-surface dark:text-on-surface">{successMessage}</p>
         </div>
       )}
 
       {/* Delete error */}
       {deleteError && (
-        <div role="alert" className="mb-4 rounded-md bg-red-50 dark:bg-red-900/30 p-4">
-          <p className="text-sm text-red-700 dark:text-red-400">{deleteError}</p>
+        <div role="alert" className="mb-4 border border-error dark:border-error bg-error-container dark:bg-on-error px-4 py-3">
+          <p className="text-sm text-on-error-container dark:text-error">{deleteError}</p>
         </div>
       )}
 
@@ -467,61 +466,64 @@ export function CollectionsPage() {
       )}
 
       {!state.loading && !state.error && filteredCollections.length > 0 && (
-        <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-900">
-              <tr>
+        <div className="overflow-x-auto border border-primary dark:border-primary">
+          <table className="min-w-full">
+            <thead>
+              <tr className="bg-primary dark:bg-primary">
                 <th
                   scope="col"
-                  className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 sm:px-6"
+                  className="px-4 py-3 text-left text-label-md text-on-primary dark:text-on-primary sm:px-6 border-r border-on-primary/20 dark:border-on-primary/20"
                 >
-                  Name
+                  NAME
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 sm:px-6"
+                  className="px-4 py-3 text-left text-label-md text-on-primary dark:text-on-primary sm:px-6 border-r border-on-primary/20 dark:border-on-primary/20"
                 >
-                  Type
+                  TYPE
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 sm:px-6"
+                  className="px-4 py-3 text-left text-label-md text-on-primary dark:text-on-primary sm:px-6 border-r border-on-primary/20 dark:border-on-primary/20"
                 >
-                  Fields
+                  FIELDS
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400 sm:px-6"
+                  className="px-4 py-3 text-right text-label-md text-on-primary dark:text-on-primary sm:px-6"
                 >
-                  Actions
+                  ACTIONS
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody>
               {filteredCollections.map((collection) => (
-                <tr key={collection.id} className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="whitespace-nowrap px-4 py-4 sm:px-6">
+                <tr
+                  key={collection.id}
+                  className="border-b border-primary dark:border-primary hover:bg-surface-container-low dark:hover:bg-surface-container transition-colors-fast"
+                >
+                  <td className="whitespace-nowrap px-4 py-4 sm:px-6 border-r border-primary dark:border-primary">
                     <a
                       href={`/_/collections/${encodeURIComponent(collection.id)}`}
-                      className="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400"
+                      className="text-sm font-semibold text-on-surface dark:text-on-surface hover:underline"
                     >
                       {collection.name}
                     </a>
                   </td>
-                  <td className="whitespace-nowrap px-4 py-4 sm:px-6">
+                  <td className="whitespace-nowrap px-4 py-4 sm:px-6 border-r border-primary dark:border-primary">
                     <CollectionTypeBadge type={collection.type} />
                   </td>
-                  <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-500 dark:text-gray-400 sm:px-6">
+                  <td className="whitespace-nowrap px-4 py-4 text-sm text-on-surface-variant dark:text-on-surface-variant sm:px-6 border-r border-primary dark:border-primary font-data">
                     {collection.fields.length} {collection.fields.length === 1 ? 'field' : 'fields'}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-right sm:px-6">
                     <div className="flex items-center justify-end gap-2">
                       <a
                         href={`/_/collections/${encodeURIComponent(collection.id)}/edit`}
-                        className="rounded-md px-2.5 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+                        className="border border-primary dark:border-primary px-3 py-1.5 text-label-sm text-on-surface dark:text-on-surface hover:bg-primary hover:text-on-primary dark:hover:bg-primary dark:hover:text-on-primary transition-colors-fast"
                         aria-label={`Edit ${collection.name}`}
                       >
-                        Edit
+                        EDIT
                       </a>
                       <button
                         type="button"
@@ -530,10 +532,10 @@ export function CollectionsPage() {
                           setSuccessMessage(null);
                           setDeleteTarget(collection);
                         }}
-                        className="rounded-md px-2.5 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 transition-colors hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-700 dark:hover:text-red-300"
+                        className="border border-error dark:border-error px-3 py-1.5 text-label-sm text-error dark:text-error hover:bg-error hover:text-on-error dark:hover:bg-error dark:hover:text-on-error cursor-pointer transition-colors-fast"
                         aria-label={`Delete ${collection.name}`}
                       >
-                        Delete
+                        DELETE
                       </button>
                     </div>
                   </td>
@@ -546,8 +548,8 @@ export function CollectionsPage() {
 
       {/* Summary */}
       {!state.loading && !state.error && state.collections.length > 0 && (
-        <p className="mt-4 text-xs text-gray-400 dark:text-gray-500">
-          {filteredCollections.length} of {state.collections.length} collection{state.collections.length !== 1 ? 's' : ''}
+        <p className="mt-4 text-label-sm text-secondary dark:text-secondary">
+          {filteredCollections.length} OF {state.collections.length} COLLECTION{state.collections.length !== 1 ? 'S' : ''}
         </p>
       )}
 

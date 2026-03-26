@@ -217,7 +217,7 @@ describe('OverviewPage', () => {
       await user.click(screen.getByText('Retry'));
 
       await waitFor(() => {
-        expect(screen.getByText('Dashboard')).toBeInTheDocument();
+        expect(screen.getByText('System Overview')).toBeInTheDocument();
       });
     });
   });
@@ -271,7 +271,7 @@ describe('OverviewPage', () => {
 
       await waitFor(() => {
         const badge = screen.getByTestId('health-badge');
-        expect(badge).toHaveTextContent('Healthy');
+        expect(badge).toHaveTextContent('Operational');
       });
     });
 
@@ -353,7 +353,7 @@ describe('OverviewPage', () => {
       render(<OverviewPage />);
 
       await waitFor(() => {
-        expect(screen.getByText('System Status')).toBeInTheDocument();
+        expect(screen.getByText('System Overview')).toBeInTheDocument();
       });
 
       expect(screen.queryByTestId('collections-list')).not.toBeInTheDocument();
@@ -409,7 +409,7 @@ describe('OverviewPage', () => {
       render(<OverviewPage />);
 
       await waitFor(() => {
-        const viewAllLink = screen.getByText('View all logs');
+        const viewAllLink = screen.getByText('View All Logs');
         expect(viewAllLink.closest('a')).toHaveAttribute('href', '/_/logs');
       });
     });
@@ -449,7 +449,7 @@ describe('OverviewPage', () => {
       await waitFor(() => {
         // Should still show collections and health
         expect(screen.getByTestId('stat-collections')).toHaveTextContent('3');
-        expect(screen.getByTestId('health-badge')).toHaveTextContent('Healthy');
+        expect(screen.getByTestId('health-badge')).toHaveTextContent('Operational');
       });
 
       // Status breakdown should not be shown

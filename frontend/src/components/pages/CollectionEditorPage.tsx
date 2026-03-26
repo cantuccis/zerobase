@@ -90,6 +90,24 @@ function validateForm(form: FormState): ValidationErrors {
   return errors;
 }
 
+// ── Section Header ──────────────────────────────────────────────────────────
+
+function SectionHeader({ number, title, description }: { number: string; title: string; description?: string }) {
+  return (
+    <div className="col-span-12 border-b border-primary pb-4 mb-6">
+      <div className="grid grid-cols-12 gap-6">
+        <div className="col-span-12 md:col-span-4">
+          <span className="text-label-md text-secondary">{number}</span>
+          <h3 className="text-title-md text-on-surface mt-1">{title}</h3>
+          {description && (
+            <p className="text-sm text-secondary mt-1">{description}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ──────────────────────────────────────────────────────────
 
 export function CollectionEditorPage({ mode, collectionId }: CollectionEditorPageProps) {
@@ -256,11 +274,11 @@ export function CollectionEditorPage({ mode, collectionId }: CollectionEditorPag
   if (loading) {
     return (
       <DashboardLayout currentPath="/_/collections" pageTitle={pageTitle}>
-        <div className="space-y-4" data-testid="editor-loading">
-          <div className="animate-pulse rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
-            <div className="h-6 w-48 rounded bg-gray-200 dark:bg-gray-600" />
-            <div className="mt-4 h-10 w-full rounded bg-gray-200 dark:bg-gray-600" />
-            <div className="mt-4 h-10 w-full rounded bg-gray-200 dark:bg-gray-600" />
+        <div className="space-y-6" data-testid="editor-loading" role="status" aria-label="Loading collection">
+          <div className="border border-primary bg-surface p-6">
+            <div className="h-6 w-48 bg-surface-container-high" />
+            <div className="mt-4 h-10 w-full bg-surface-container-high" />
+            <div className="mt-4 h-10 w-full bg-surface-container-high" />
           </div>
         </div>
       </DashboardLayout>
@@ -270,11 +288,11 @@ export function CollectionEditorPage({ mode, collectionId }: CollectionEditorPag
   if (loadError) {
     return (
       <DashboardLayout currentPath="/_/collections" pageTitle={pageTitle}>
-        <div role="alert" className="rounded-md bg-red-50 dark:bg-red-900/30 p-4">
-          <p className="text-sm text-red-700 dark:text-red-400">{loadError}</p>
+        <div role="alert" className="border border-error bg-error-container p-4">
+          <p className="text-sm text-on-error-container">{loadError}</p>
           <a
             href="/_/collections"
-            className="mt-2 inline-block text-sm font-medium text-red-700 dark:text-red-400 underline hover:text-red-800 dark:hover:text-red-300"
+            className="mt-2 inline-block text-sm font-semibold text-on-error-container underline"
           >
             Back to collections
           </a>
@@ -285,157 +303,217 @@ export function CollectionEditorPage({ mode, collectionId }: CollectionEditorPag
 
   return (
     <DashboardLayout currentPath="/_/collections" pageTitle={pageTitle}>
-      <div className="mx-auto max-w-4xl space-y-6">
+      <div className="mx-auto max-w-5xl space-y-0">
         {/* Save error */}
         {saveError && (
-          <div role="alert" className="rounded-md bg-red-50 dark:bg-red-900/30 p-4">
-            <p className="text-sm text-red-700 dark:text-red-400">{saveError}</p>
+          <div role="alert" className="border border-error bg-error-container p-4 mb-6">
+            <p className="text-sm text-on-error-container">{saveError}</p>
           </div>
         )}
 
         {/* Save success */}
         {saveSuccess && (
-          <div role="status" className="rounded-md bg-green-50 dark:bg-green-900/30 p-4">
-            <p className="text-sm text-green-700 dark:text-green-400">Collection saved successfully.</p>
+          <div role="status" className="border border-primary bg-surface-container-low p-4 mb-6">
+            <p className="text-sm text-on-surface">Collection saved successfully.</p>
           </div>
         )}
 
-        {/* ── Collection basics ────────────────────────────────────────── */}
-        <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Collection Details</h3>
-
-          {/* Name */}
-          <div className="mt-4">
-            <label htmlFor="collection-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Name
-            </label>
-            <input
-              id="collection-name"
-              type="text"
-              value={form.name}
-              onChange={(e) => {
-                setForm((prev) => ({ ...prev, name: e.target.value }));
-                if (validationErrors.name) {
-                  setValidationErrors((prev) => ({ ...prev, name: undefined }));
-                }
-              }}
-              placeholder="e.g. posts, users, comments"
-              className={`mt-1 w-full rounded-md border px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 placeholder-gray-400 dark:placeholder-gray-500 focus-visible:outline-none focus-visible:ring-1 ${
-                validationErrors.name
-                  ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                  : 'border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500'
-              }`}
-              aria-invalid={validationErrors.name ? 'true' : undefined}
-              aria-describedby={validationErrors.name ? 'collection-name-error' : undefined}
-              data-testid="collection-name"
-            />
-            {validationErrors.name && (
-              <p id="collection-name-error" className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">
-                {validationErrors.name}
-              </p>
-            )}
-          </div>
-
-          {/* Type */}
-          <fieldset className="mt-4">
-            <legend className="block text-sm font-medium text-gray-700 dark:text-gray-300">Type</legend>
-            <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {COLLECTION_TYPE_OPTIONS.map((opt) => (
-                <label
-                  key={opt.value}
-                  className={`cursor-pointer rounded-lg border-2 p-3 transition-colors ${
-                    form.type === opt.value
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                  }`}
-                  data-testid={`type-${opt.value}`}
-                >
-                  <input
-                    type="radio"
-                    name="collection-type"
-                    value={opt.value}
-                    checked={form.type === opt.value}
-                    onChange={() => setForm((prev) => ({ ...prev, type: opt.value }))}
-                    className="sr-only"
-                  />
-                  <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">{opt.label}</span>
-                  <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">{opt.description}</span>
+        {/* ── 01. General ────────────────────────────────────────── */}
+        <section className="py-8">
+          <SectionHeader number="01" title="General" description="Basic collection configuration." />
+          <div className="grid grid-cols-12 gap-6">
+            <div className="col-span-12 md:col-span-4">
+              <p className="text-sm text-secondary">Define the collection name and type. The name is used for API endpoints.</p>
+            </div>
+            <div className="col-span-12 md:col-span-8 space-y-5">
+              {/* Name */}
+              <div>
+                <label htmlFor="collection-name" className="text-label-md text-on-surface-variant block mb-1.5">
+                  Name
                 </label>
-              ))}
-            </div>
-          </fieldset>
-        </section>
-
-        {/* ── Auth System Fields (read-only) ────────────────────────── */}
-        <AuthFieldsDisplay collectionType={form.type} />
-
-        {/* ── Fields ──────────────────────────────────────────────────── */}
-        <section>
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{form.type === 'auth' ? 'Additional Fields' : 'Fields'}</h3>
-            <button
-              type="button"
-              onClick={addField}
-              className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:hover:bg-blue-600"
-              data-testid="add-field"
-            >
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              Add Field
-            </button>
-          </div>
-
-          {form.fields.length === 0 ? (
-            <div className="rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 py-8 text-center">
-              <p className="text-sm text-gray-500 dark:text-gray-400">No fields yet. Click "Add Field" to start.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {form.fields.map((field, index) => (
-                <FieldEditor
-                  key={field.id}
-                  field={field}
-                  index={index}
-                  totalFields={form.fields.length}
-                  onChange={(updated) => updateField(field.id, updated)}
-                  onRemove={() => removeField(field.id)}
-                  onMoveUp={() => moveField(index, -1)}
-                  onMoveDown={() => moveField(index, 1)}
-                  collections={allCollections}
-                  nameError={validationErrors.fields?.[field.id]}
+                <input
+                  id="collection-name"
+                  type="text"
+                  value={form.name}
+                  onChange={(e) => {
+                    setForm((prev) => ({ ...prev, name: e.target.value }));
+                    if (validationErrors.name) {
+                      setValidationErrors((prev) => ({ ...prev, name: undefined }));
+                    }
+                  }}
+                  placeholder="e.g. posts, users, comments"
+                  className={`w-full border px-3 py-2 text-sm text-on-surface bg-background placeholder-outline focus:outline-none ${
+                    validationErrors.name
+                      ? 'border-error focus:border-error'
+                      : 'border-primary focus:border-primary'
+                  }`}
+                  style={{ borderWidth: validationErrors.name ? '2px' : '1px' }}
+                  aria-invalid={validationErrors.name ? 'true' : undefined}
+                  aria-describedby={validationErrors.name ? 'collection-name-error' : undefined}
+                  data-testid="collection-name"
                 />
-              ))}
+                {validationErrors.name && (
+                  <p id="collection-name-error" className="mt-1 text-sm text-error" role="alert">
+                    {validationErrors.name}
+                  </p>
+                )}
+              </div>
+
+              {/* Type */}
+              <fieldset>
+                <legend className="text-label-md text-on-surface-variant block mb-2">Type</legend>
+                <div className="grid grid-cols-1 gap-0 sm:grid-cols-3">
+                  {COLLECTION_TYPE_OPTIONS.map((opt) => (
+                    <label
+                      key={opt.value}
+                      className={`cursor-pointer border p-4 ${
+                        form.type === opt.value
+                          ? 'border-primary bg-primary text-on-primary border-2'
+                          : 'border-outline-variant bg-background text-on-surface hover:bg-surface-container-low transition-colors-fast'
+                      }`}
+                      data-testid={`type-${opt.value}`}
+                    >
+                      <input
+                        type="radio"
+                        name="collection-type"
+                        value={opt.value}
+                        checked={form.type === opt.value}
+                        onChange={() => setForm((prev) => ({ ...prev, type: opt.value }))}
+                        className="sr-only"
+                      />
+                      <span className="block text-sm font-semibold">{opt.label}</span>
+                      <span className={`mt-0.5 block text-xs ${form.type === opt.value ? 'opacity-80' : 'text-secondary'}`}>{opt.description}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
             </div>
-          )}
+          </div>
         </section>
 
-        {/* ── Auth Settings ─────────────────────────────────────────── */}
+        {/* ── 02. Auth System Fields (read-only) ────────────────────────── */}
         {form.type === 'auth' && (
-          <AuthSettingsEditor
-            authOptions={form.authOptions}
-            onChange={(authOptions) => setForm((prev) => ({ ...prev, authOptions }))}
-          />
+          <section className="py-8">
+            <SectionHeader number="02" title="Auth System Fields" description="Auto-managed authentication fields." />
+            <div className="grid grid-cols-12 gap-6">
+              <div className="col-span-12 md:col-span-4">
+                <p className="text-sm text-secondary">These fields are automatically managed and cannot be removed.</p>
+              </div>
+              <div className="col-span-12 md:col-span-8">
+                <AuthFieldsDisplay collectionType={form.type} />
+              </div>
+            </div>
+          </section>
         )}
 
-        {/* ── API Rules ──────────────────────────────────────────────── */}
-        <RulesEditor
-          rules={form.rules}
-          onChange={(rules) => setForm((prev) => ({ ...prev, rules }))}
-          collectionType={form.type}
-        />
+        {/* ── 03. Fields ──────────────────────────────────────────────────── */}
+        <section className="py-8">
+          <SectionHeader
+            number={form.type === 'auth' ? '03' : '02'}
+            title={form.type === 'auth' ? 'Additional Fields' : 'Fields'}
+            description="Define the schema fields for this collection."
+          />
+          <div className="grid grid-cols-12 gap-6">
+            <div className="col-span-12 md:col-span-4">
+              <p className="text-sm text-secondary">Add custom fields to define your data structure. Each field has a type and optional constraints.</p>
+              <button
+                type="button"
+                onClick={addField}
+                className="mt-4 inline-flex items-center gap-2 border border-primary bg-primary text-on-primary px-4 py-2 text-sm font-semibold hover:opacity-90"
+                data-testid="add-field"
+              >
+                <span className="material-symbols-outlined text-base" aria-hidden="true">add</span>
+                Add Field
+              </button>
+            </div>
+            <div className="col-span-12 md:col-span-8">
+              {form.fields.length === 0 ? (
+                <div className="border border-dashed border-outline py-8 text-center">
+                  <p className="text-sm text-secondary">No fields yet. Click &ldquo;Add Field&rdquo; to start.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {form.fields.map((field, index) => (
+                    <FieldEditor
+                      key={field.id}
+                      field={field}
+                      index={index}
+                      totalFields={form.fields.length}
+                      onChange={(updated) => updateField(field.id, updated)}
+                      onRemove={() => removeField(field.id)}
+                      onMoveUp={() => moveField(index, -1)}
+                      onMoveDown={() => moveField(index, 1)}
+                      collections={allCollections}
+                      nameError={validationErrors.fields?.[field.id]}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
 
-        {/* ── API Preview ─────────────────────────────────────────────── */}
-        <section>
-          <ApiPreview collectionName={form.name} collectionType={form.type} />
+        {/* ── 04. Auth Settings ─────────────────────────────────────────── */}
+        {form.type === 'auth' && (
+          <section className="py-8">
+            <SectionHeader number="04" title="Auth Settings" description="Authentication methods and security policies." />
+            <div className="grid grid-cols-12 gap-6">
+              <div className="col-span-12 md:col-span-4">
+                <p className="text-sm text-secondary">Configure how users authenticate with this collection.</p>
+              </div>
+              <div className="col-span-12 md:col-span-8">
+                <AuthSettingsEditor
+                  authOptions={form.authOptions}
+                  onChange={(authOptions) => setForm((prev) => ({ ...prev, authOptions }))}
+                />
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ── 05. API Rules ──────────────────────────────────────────────── */}
+        <section className="py-8">
+          <SectionHeader
+            number={form.type === 'auth' ? '05' : '03'}
+            title="API Rules"
+            description="Control access to API endpoints."
+          />
+          <div className="grid grid-cols-12 gap-6">
+            <div className="col-span-12 md:col-span-4">
+              <p className="text-sm text-secondary">Set rules to control who can list, view, create, update, or delete records.</p>
+            </div>
+            <div className="col-span-12 md:col-span-8">
+              <RulesEditor
+                rules={form.rules}
+                onChange={(rules) => setForm((prev) => ({ ...prev, rules }))}
+                collectionType={form.type}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* ── 06. API Preview ─────────────────────────────────────────────── */}
+        <section className="py-8">
+          <SectionHeader
+            number={form.type === 'auth' ? '06' : '04'}
+            title="API Preview"
+            description="Auto-generated endpoints for this collection."
+          />
+          <div className="grid grid-cols-12 gap-6">
+            <div className="col-span-12 md:col-span-4">
+              <p className="text-sm text-secondary">These endpoints are automatically generated based on your collection configuration.</p>
+            </div>
+            <div className="col-span-12 md:col-span-8">
+              <ApiPreview collectionName={form.name} collectionType={form.type} />
+            </div>
+          </div>
         </section>
 
         {/* ── Actions ─────────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-6">
+        <div className="flex items-center justify-between border-t border-primary pt-6 pb-8">
           <a
             href="/_/collections"
-            className="rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="border border-primary px-5 py-2.5 text-sm font-semibold text-on-surface hover:bg-surface-container-low transition-colors-fast"
           >
             Cancel
           </a>
@@ -443,10 +521,10 @@ export function CollectionEditorPage({ mode, collectionId }: CollectionEditorPag
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="rounded-md bg-blue-600 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50"
+            className="bg-primary text-on-primary px-6 py-2.5 text-sm font-semibold hover:opacity-90 disabled:opacity-50"
             data-testid="save-collection"
           >
-            {saving ? 'Saving...' : mode === 'create' ? 'Create Collection' : 'Save Changes'}
+            {saving ? 'Saving\u2026' : mode === 'create' ? 'Create Collection' : 'Save Changes'}
           </button>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTheme, type Theme } from '../lib/theme';
 
 const THEME_OPTIONS: { value: Theme; label: string }[] = [
@@ -5,6 +6,10 @@ const THEME_OPTIONS: { value: Theme; label: string }[] = [
   { value: 'dark', label: 'Dark' },
   { value: 'system', label: 'System' },
 ];
+
+function getOptionId(value: Theme) {
+  return `theme-option-${value}`;
+}
 
 function SunIcon({ className }: { className?: string }) {
   return (
@@ -32,36 +37,147 @@ function MoonIcon({ className }: { className?: string }) {
 
 export function ThemeToggle() {
   const { theme, resolvedTheme, setTheme } = useTheme();
+  const [open, setOpen] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  const optionRefs = useRef<(HTMLLIElement | null)[]>([]);
 
-  function cycleTheme() {
-    const order: Theme[] = ['light', 'dark', 'system'];
-    const idx = order.indexOf(theme);
-    setTheme(order[(idx + 1) % order.length]);
-  }
+  const currentIndex = THEME_OPTIONS.findIndex((opt) => opt.value === theme);
+
+  // When dropdown opens, focus the listbox and set focusedIndex to current selection
+  useEffect(() => {
+    if (open) {
+      setFocusedIndex(currentIndex >= 0 ? currentIndex : 0);
+      // Focus the listbox so it receives keyboard events
+      requestAnimationFrame(() => {
+        listRef.current?.focus();
+      });
+    } else {
+      setFocusedIndex(-1);
+    }
+  }, [open, currentIndex]);
+
+  // Scroll focused option into view
+  useEffect(() => {
+    if (open && focusedIndex >= 0) {
+      optionRefs.current[focusedIndex]?.scrollIntoView?.({ block: 'nearest' });
+    }
+  }, [open, focusedIndex]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleListKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      switch (e.key) {
+        case 'ArrowDown': {
+          e.preventDefault();
+          setFocusedIndex((prev) =>
+            prev < THEME_OPTIONS.length - 1 ? prev + 1 : prev,
+          );
+          break;
+        }
+        case 'ArrowUp': {
+          e.preventDefault();
+          setFocusedIndex((prev) => (prev > 0 ? prev - 1 : prev));
+          break;
+        }
+        case 'Enter': {
+          e.preventDefault();
+          if (focusedIndex >= 0 && focusedIndex < THEME_OPTIONS.length) {
+            setTheme(THEME_OPTIONS[focusedIndex].value);
+            setOpen(false);
+          }
+          break;
+        }
+        case 'Escape': {
+          e.preventDefault();
+          setOpen(false);
+          break;
+        }
+        default:
+          break;
+      }
+    },
+    [focusedIndex, setTheme],
+  );
+
+  const focusedValue =
+    focusedIndex >= 0 && focusedIndex < THEME_OPTIONS.length
+      ? THEME_OPTIONS[focusedIndex].value
+      : undefined;
 
   return (
-    <div className="flex items-center gap-1">
+    <div ref={containerRef} className="relative">
       <button
         type="button"
-        onClick={cycleTheme}
-        className="rounded-md p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex items-center gap-2 border border-primary bg-background px-2 py-1.5 text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
         aria-label={`Theme: ${theme}. Click to change.`}
-        title={`Current theme: ${theme}`}
+        aria-expanded={open}
+        aria-haspopup="listbox"
       >
         {resolvedTheme === 'dark' ? <MoonIcon /> : <SunIcon />}
+        <span className="text-xs font-bold uppercase tracking-wider">
+          {theme}
+        </span>
       </button>
-      <select
-        value={theme}
-        onChange={(e) => setTheme(e.target.value as Theme)}
-        className="rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-600 transition-colors hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-gray-500"
-        aria-label="Select theme"
-      >
-        {THEME_OPTIONS.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
+
+      {open && (
+        <ul
+          ref={listRef}
+          role="listbox"
+          aria-label="Select theme"
+          aria-activedescendant={focusedValue ? getOptionId(focusedValue) : undefined}
+          tabIndex={-1}
+          onKeyDown={handleListKeyDown}
+          className="absolute right-0 top-full z-50 mt-0 min-w-full border border-primary bg-background animate-slide-down-in focus:outline-none"
+        >
+          {THEME_OPTIONS.map((opt, index) => {
+            const isFocused = index === focusedIndex;
+            const isSelected = theme === opt.value;
+            return (
+              <li
+                key={opt.value}
+                id={getOptionId(opt.value)}
+                ref={(el) => {
+                  optionRefs.current[index] = el;
+                }}
+                role="option"
+                aria-selected={isSelected}
+              >
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => {
+                    setTheme(opt.value);
+                    setOpen(false);
+                  }}
+                  onMouseEnter={() => setFocusedIndex(index)}
+                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs font-bold uppercase tracking-wider transition-colors-fast ${
+                    isFocused
+                      ? 'bg-primary text-on-primary'
+                      : 'text-primary hover:bg-primary hover:text-on-primary'
+                  }`}
+                >
+                  <span className="inline-block w-3 text-center">
+                    {isSelected ? '●' : ''}
+                  </span>
+                  {opt.label}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }

@@ -128,7 +128,7 @@ describe('SettingsPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('SMTP Configuration')).toBeInTheDocument();
+      expect(screen.getByText('02. Mail Settings')).toBeInTheDocument();
     });
   });
 
@@ -144,7 +144,7 @@ describe('SettingsPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('SMTP Configuration')).toBeInTheDocument();
+      expect(screen.getByText('02. Mail Settings')).toBeInTheDocument();
     });
 
     expect(screen.queryByLabelText(/SMTP Host/)).not.toBeInTheDocument();
@@ -157,10 +157,10 @@ describe('SettingsPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('SMTP Configuration')).toBeInTheDocument();
+      expect(screen.getByText('02. Mail Settings')).toBeInTheDocument();
     });
 
-    expect(screen.queryByText('Send Test Email')).not.toBeInTheDocument();
+    expect(screen.queryByText('04. Test Email')).not.toBeInTheDocument();
   });
 
   // ── Toggling SMTP on ────────────────────────────────────────────────────
@@ -500,7 +500,7 @@ describe('SettingsPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('File Storage')).toBeInTheDocument();
+      expect(screen.getByText('03. File Storage')).toBeInTheDocument();
     });
   });
 
@@ -516,7 +516,7 @@ describe('SettingsPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('File Storage')).toBeInTheDocument();
+      expect(screen.getByText('03. File Storage')).toBeInTheDocument();
     });
 
     expect(screen.queryByLabelText(/Bucket/)).not.toBeInTheDocument();
@@ -639,7 +639,7 @@ describe('SettingsPage', () => {
     const user = userEvent.setup();
 
     await waitFor(() => {
-      expect(screen.getByText('File Storage')).toBeInTheDocument();
+      expect(screen.getByText('03. File Storage')).toBeInTheDocument();
     });
 
     await user.click(screen.getByText('Save Storage Settings'));

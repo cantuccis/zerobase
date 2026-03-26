@@ -18,9 +18,23 @@ use std::collections::{HashMap, HashSet};
 use serde_json::Value;
 
 use crate::error::{Result, ZerobaseError};
+use crate::schema::rule_engine::{check_rule, evaluate_rule_str, RequestContext, RuleDecision};
 use crate::schema::{Collection, Field, FieldType, RelationOptions};
 
 use super::record_service::{RecordRepository, SchemaLookup};
+
+/// Authentication context for relation expansion.
+///
+/// Carries the minimal auth information needed to evaluate `view_rule` on
+/// target collections during expansion. This avoids coupling the core expand
+/// service to the API layer's `AuthInfo` type.
+#[derive(Debug, Clone)]
+pub struct ExpandAuth {
+    /// Whether the caller is a superuser (bypasses all rules).
+    pub is_superuser: bool,
+    /// A [`RequestContext`] for rule evaluation (contains `@request.auth.*`, method, etc.).
+    pub request_context: RequestContext,
+}
 
 /// Maximum expansion depth to prevent abuse and runaway queries.
 pub const MAX_EXPAND_DEPTH: usize = 6;
@@ -215,18 +229,69 @@ fn parse_back_relation(field_name: &str) -> Option<(String, String)> {
     None
 }
 
+/// Check whether the current auth context is allowed to view records in
+/// the given collection according to its `view_rule`.
+///
+/// Returns `true` if:
+/// - The caller is a superuser (bypasses all rules).
+/// - The collection's view_rule is `Some("")` (open to everyone).
+/// - The collection's view_rule expression evaluates to `true` for the
+///   given record.
+///
+/// Returns `false` if:
+/// - The view_rule is `None` (locked to superusers) and the caller is not
+///   a superuser.
+/// - The view_rule expression evaluates to `false`.
+fn can_view_expanded_record(
+    auth: &ExpandAuth,
+    collection: &Collection,
+    record: &HashMap<String, Value>,
+) -> bool {
+    if auth.is_superuser {
+        return true;
+    }
+    // Also check manage_rule: if the user matches it, they bypass view_rule.
+    match check_rule(&collection.rules.manage_rule) {
+        RuleDecision::Allow => {
+            // Empty manage_rule = any authenticated request gets manage access.
+            if auth.request_context.is_authenticated() {
+                return true;
+            }
+        }
+        RuleDecision::Evaluate(ref expr) => {
+            if evaluate_rule_str(expr, &auth.request_context, record).unwrap_or(false) {
+                return true;
+            }
+        }
+        RuleDecision::Deny => {}
+    }
+
+    match check_rule(&collection.rules.view_rule) {
+        RuleDecision::Allow => true,
+        RuleDecision::Deny => false,
+        RuleDecision::Evaluate(ref expr) => {
+            evaluate_rule_str(expr, &auth.request_context, record).unwrap_or(false)
+        }
+    }
+}
+
 /// Expand relations for a single record, returning the expand map.
 ///
 /// The expand map has the same structure as PocketBase: each key is the
 /// relation field name, and the value is either a single record object
 /// (for single-relation fields) or an array of record objects (for
 /// multi-relation fields and back-relations).
+///
+/// **Security:** Before including an expanded record, the target collection's
+/// `view_rule` is evaluated against the caller's auth context. Records the
+/// caller is not authorized to view are silently omitted.
 pub fn expand_record<R: RecordRepository, S: SchemaLookup>(
     record: &HashMap<String, Value>,
     collection: &Collection,
     expand_paths: &[ExpandPath],
     repo: &R,
     schema: &S,
+    auth: &ExpandAuth,
     visited: &mut HashSet<(String, String)>,
     depth: usize,
 ) -> Result<HashMap<String, Value>> {
@@ -280,11 +345,16 @@ pub fn expand_record<R: RecordRepository, S: SchemaLookup>(
                     continue;
                 }
 
-                // Fetch referenced records
+                // Fetch referenced records, enforcing view_rule on each.
                 let mut expanded_records = Vec::new();
                 for ref_id in &ref_ids {
                     match repo.find_one(&target_collection.name, ref_id) {
                         Ok(mut related) => {
+                            // Enforce view_rule: skip records the caller cannot view.
+                            if !can_view_expanded_record(auth, &target_collection, &related) {
+                                continue;
+                            }
+
                             // Recursively expand nested paths
                             if !child_paths.is_empty() {
                                 let nested_expand = expand_record(
@@ -293,6 +363,7 @@ pub fn expand_record<R: RecordRepository, S: SchemaLookup>(
                                     child_paths,
                                     repo,
                                     schema,
+                                    auth,
                                     visited,
                                     depth + 1,
                                 )?;
@@ -362,6 +433,11 @@ pub fn expand_record<R: RecordRepository, S: SchemaLookup>(
 
                 let mut expanded_records = Vec::new();
                 for mut related in referencing {
+                    // Enforce view_rule: skip records the caller cannot view.
+                    if !can_view_expanded_record(auth, &source_col, &related) {
+                        continue;
+                    }
+
                     // Recursively expand nested paths
                     if !child_paths.is_empty() {
                         let nested_expand = expand_record(
@@ -370,6 +446,7 @@ pub fn expand_record<R: RecordRepository, S: SchemaLookup>(
                             child_paths,
                             repo,
                             schema,
+                            auth,
                             visited,
                             depth + 1,
                         )?;
@@ -395,7 +472,9 @@ pub fn expand_record<R: RecordRepository, S: SchemaLookup>(
                 }
 
                 // Back-relations always produce an array
-                expand_map.insert(field_name.clone(), Value::Array(expanded_records));
+                if !expanded_records.is_empty() {
+                    expand_map.insert(field_name.clone(), Value::Array(expanded_records));
+                }
             }
         }
 
@@ -409,13 +488,15 @@ pub fn expand_record<R: RecordRepository, S: SchemaLookup>(
 
 /// Expand relations for a list of records.
 ///
-/// Applies [`expand_record`] to each record in the list.
+/// Applies [`expand_record`] to each record in the list, enforcing
+/// `view_rule` access checks on all expanded target collections.
 pub fn expand_records<R: RecordRepository, S: SchemaLookup>(
     records: &mut [HashMap<String, Value>],
     collection: &Collection,
     expand_paths: &[ExpandPath],
     repo: &R,
     schema: &S,
+    auth: &ExpandAuth,
 ) -> Result<()> {
     if expand_paths.is_empty() {
         return Ok(());
@@ -429,6 +510,7 @@ pub fn expand_records<R: RecordRepository, S: SchemaLookup>(
             expand_paths,
             repo,
             schema,
+            auth,
             &mut visited,
             0,
         )?;
@@ -455,6 +537,30 @@ mod tests {
     use serde_json::json;
     use std::collections::HashMap;
     use std::sync::Mutex;
+
+    /// Create an [`ExpandAuth`] that bypasses all view_rule checks (superuser).
+    fn superuser_auth() -> ExpandAuth {
+        ExpandAuth {
+            is_superuser: true,
+            request_context: RequestContext::anonymous(),
+        }
+    }
+
+    /// Create an [`ExpandAuth`] for an anonymous (unauthenticated) user.
+    fn anonymous_auth() -> ExpandAuth {
+        ExpandAuth {
+            is_superuser: false,
+            request_context: RequestContext::anonymous(),
+        }
+    }
+
+    /// Create an [`ExpandAuth`] for an authenticated user with the given auth record fields.
+    fn authenticated_auth(auth_fields: HashMap<String, serde_json::Value>) -> ExpandAuth {
+        ExpandAuth {
+            is_superuser: false,
+            request_context: RequestContext::authenticated(auth_fields),
+        }
+    }
 
     // ── Mock Repository ──────────────────────────────────────────────────
 
@@ -886,7 +992,7 @@ mod tests {
         let paths = parse_expand("author").unwrap();
         let mut visited = HashSet::new();
         let expand =
-            expand_record(&record, &posts_col, &paths, &repo, &schema, &mut visited, 0).unwrap();
+            expand_record(&record, &posts_col, &paths, &repo, &schema, &superuser_auth(), &mut visited, 0).unwrap();
 
         assert!(expand.contains_key("author"));
         let author = &expand["author"];
@@ -909,7 +1015,7 @@ mod tests {
         let paths = parse_expand("tags").unwrap();
         let mut visited = HashSet::new();
         let expand =
-            expand_record(&record, &posts_col, &paths, &repo, &schema, &mut visited, 0).unwrap();
+            expand_record(&record, &posts_col, &paths, &repo, &schema, &superuser_auth(), &mut visited, 0).unwrap();
 
         assert!(expand.contains_key("tags"));
         let tags = expand["tags"].as_array().unwrap();
@@ -932,7 +1038,7 @@ mod tests {
         let paths = parse_expand("author,tags").unwrap();
         let mut visited = HashSet::new();
         let expand =
-            expand_record(&record, &posts_col, &paths, &repo, &schema, &mut visited, 0).unwrap();
+            expand_record(&record, &posts_col, &paths, &repo, &schema, &superuser_auth(), &mut visited, 0).unwrap();
 
         assert!(expand.contains_key("author"));
         assert!(expand.contains_key("tags"));
@@ -958,6 +1064,7 @@ mod tests {
             &paths,
             &repo,
             &schema,
+            &superuser_auth(),
             &mut visited,
             0,
         )
@@ -985,7 +1092,7 @@ mod tests {
         let paths = parse_expand("comments_via_post").unwrap();
         let mut visited = HashSet::new();
         let expand =
-            expand_record(&record, &posts_col, &paths, &repo, &schema, &mut visited, 0).unwrap();
+            expand_record(&record, &posts_col, &paths, &repo, &schema, &superuser_auth(), &mut visited, 0).unwrap();
 
         assert!(expand.contains_key("comments_via_post"));
         let comments = expand["comments_via_post"].as_array().unwrap();
@@ -1007,7 +1114,7 @@ mod tests {
         let paths = parse_expand("comments_via_post.author").unwrap();
         let mut visited = HashSet::new();
         let expand =
-            expand_record(&record, &posts_col, &paths, &repo, &schema, &mut visited, 0).unwrap();
+            expand_record(&record, &posts_col, &paths, &repo, &schema, &superuser_auth(), &mut visited, 0).unwrap();
 
         let comments = expand["comments_via_post"].as_array().unwrap();
         assert_eq!(comments.len(), 2);
@@ -1031,7 +1138,7 @@ mod tests {
         let paths = parse_expand("nonexistent").unwrap();
         let mut visited = HashSet::new();
         let expand =
-            expand_record(&record, &posts_col, &paths, &repo, &schema, &mut visited, 0).unwrap();
+            expand_record(&record, &posts_col, &paths, &repo, &schema, &superuser_auth(), &mut visited, 0).unwrap();
 
         assert!(expand.is_empty());
     }
@@ -1049,7 +1156,7 @@ mod tests {
         let paths = parse_expand("author").unwrap();
         let mut visited = HashSet::new();
         let expand =
-            expand_record(&record, &posts_col, &paths, &repo, &schema, &mut visited, 0).unwrap();
+            expand_record(&record, &posts_col, &paths, &repo, &schema, &superuser_auth(), &mut visited, 0).unwrap();
 
         assert!(expand.is_empty());
     }
@@ -1067,7 +1174,7 @@ mod tests {
         let paths = parse_expand("author").unwrap();
         let mut visited = HashSet::new();
         let expand =
-            expand_record(&record, &posts_col, &paths, &repo, &schema, &mut visited, 0).unwrap();
+            expand_record(&record, &posts_col, &paths, &repo, &schema, &superuser_auth(), &mut visited, 0).unwrap();
 
         assert!(expand.is_empty());
     }
@@ -1085,7 +1192,7 @@ mod tests {
 
         let mut records = vec![record1];
         let paths = parse_expand("author").unwrap();
-        expand_records(&mut records, &posts_col, &paths, &repo, &schema).unwrap();
+        expand_records(&mut records, &posts_col, &paths, &repo, &schema, &superuser_auth()).unwrap();
 
         assert!(records[0].contains_key("expand"));
         let expand: HashMap<String, Value> =
@@ -1111,6 +1218,7 @@ mod tests {
             &paths,
             &repo,
             &schema,
+            &superuser_auth(),
             &mut visited,
             MAX_EXPAND_DEPTH + 1,
         )
@@ -1133,7 +1241,7 @@ mod tests {
         let paths = parse_expand("posts_via_author").unwrap();
         let mut visited = HashSet::new();
         let expand =
-            expand_record(&record, &users_col, &paths, &repo, &schema, &mut visited, 0).unwrap();
+            expand_record(&record, &users_col, &paths, &repo, &schema, &superuser_auth(), &mut visited, 0).unwrap();
 
         // No matching posts → key should not appear in expand map
         assert!(
@@ -1201,7 +1309,7 @@ mod tests {
         let paths = parse_expand("bundles_via_items").unwrap();
         let mut visited = HashSet::new();
         let expand =
-            expand_record(&record, &items_col, &paths, &repo, &schema, &mut visited, 0).unwrap();
+            expand_record(&record, &items_col, &paths, &repo, &schema, &superuser_auth(), &mut visited, 0).unwrap();
 
         let bundles_arr = expand["bundles_via_items"].as_array().unwrap();
         assert_eq!(bundles_arr.len(), 2, "both bundles reference item1");
@@ -1227,7 +1335,7 @@ mod tests {
         let paths = parse_expand("comments_via_post").unwrap();
         let mut visited = HashSet::new();
         let expand =
-            expand_record(&record, &users_col, &paths, &repo, &schema, &mut visited, 0).unwrap();
+            expand_record(&record, &users_col, &paths, &repo, &schema, &superuser_auth(), &mut visited, 0).unwrap();
 
         assert!(
             expand.is_empty(),
@@ -1250,7 +1358,7 @@ mod tests {
         let paths = parse_expand("author,comments_via_post").unwrap();
         let mut visited = HashSet::new();
         let expand =
-            expand_record(&record, &posts_col, &paths, &repo, &schema, &mut visited, 0).unwrap();
+            expand_record(&record, &posts_col, &paths, &repo, &schema, &superuser_auth(), &mut visited, 0).unwrap();
 
         // Forward relation
         assert!(expand.contains_key("author"));
@@ -1315,6 +1423,7 @@ mod tests {
             &paths,
             &repo,
             &schema,
+            &superuser_auth(),
             &mut visited,
             0,
         )
@@ -1342,7 +1451,7 @@ mod tests {
         let paths = parse_expand("comments_via_post").unwrap();
         let mut visited = HashSet::new();
         let expand =
-            expand_record(&record, &posts_col, &paths, &repo, &schema, &mut visited, 0).unwrap();
+            expand_record(&record, &posts_col, &paths, &repo, &schema, &superuser_auth(), &mut visited, 0).unwrap();
 
         let comments = expand["comments_via_post"].as_array().unwrap();
         for comment in comments {
@@ -1370,7 +1479,7 @@ mod tests {
         let paths = parse_expand("posts_via_author").unwrap();
         let mut visited = HashSet::new();
         let expand =
-            expand_record(&record, &users_col, &paths, &repo, &schema, &mut visited, 0).unwrap();
+            expand_record(&record, &users_col, &paths, &repo, &schema, &superuser_auth(), &mut visited, 0).unwrap();
 
         let posts = &expand["posts_via_author"];
         assert!(
@@ -1393,7 +1502,7 @@ mod tests {
 
         let mut records = vec![record1];
         let paths = parse_expand("comments_via_post").unwrap();
-        expand_records(&mut records, &posts_col, &paths, &repo, &schema).unwrap();
+        expand_records(&mut records, &posts_col, &paths, &repo, &schema, &superuser_auth()).unwrap();
 
         assert!(records[0].contains_key("expand"));
         let expand: HashMap<String, Value> =
@@ -1423,8 +1532,771 @@ mod tests {
         let paths = parse_expand("title").unwrap();
         let mut visited = HashSet::new();
         let expand =
-            expand_record(&record, &posts_col, &paths, &repo, &schema, &mut visited, 0).unwrap();
+            expand_record(&record, &posts_col, &paths, &repo, &schema, &superuser_auth(), &mut visited, 0).unwrap();
 
         assert!(expand.is_empty());
+    }
+
+    // ── View-rule enforcement tests ───────────────────────────────────────
+
+    /// Build a minimal test scenario for view_rule tests:
+    /// - `posts` collection (open rules) with a relation to `secrets` collection.
+    /// - `secrets` collection has a configurable `view_rule`.
+    /// - Returns `(repo, schema, posts_collection)`.
+    fn view_rule_setup(
+        secret_view_rule: Option<String>,
+    ) -> (MockRepo, MockSchema, Collection) {
+        use crate::schema::ApiRules;
+
+        let repo = MockRepo::new();
+        let mut schema = MockSchema::new();
+
+        // Secrets collection with the given view_rule.
+        let mut secrets = Collection::base(
+            "secrets",
+            vec![Field::new("value", FieldType::Text(TextOptions::default()))],
+        );
+        secrets.id = "col_secrets".to_string();
+        secrets.rules = ApiRules {
+            view_rule: secret_view_rule,
+            list_rule: Some(String::new()),
+            ..ApiRules::default()
+        };
+
+        // Posts collection with a relation to secrets.
+        let mut posts = Collection::base(
+            "posts",
+            vec![
+                Field::new("title", FieldType::Text(TextOptions::default())),
+                Field::new(
+                    "secret",
+                    FieldType::Relation(RelationOptions {
+                        collection_id: "secrets".to_string(),
+                        max_select: 1,
+                        ..Default::default()
+                    }),
+                ),
+            ],
+        );
+        posts.id = "col_posts".to_string();
+        posts.rules = ApiRules::open();
+
+        // Seed data.
+        let mut secret_rec = HashMap::new();
+        secret_rec.insert("id".to_string(), json!("secret1"));
+        secret_rec.insert("value".to_string(), json!("top-secret-data"));
+        // For rule evaluation on owner-based rules:
+        secret_rec.insert("owner".to_string(), json!("user1"));
+        repo.insert_record("secrets", secret_rec);
+
+        let mut post_rec = HashMap::new();
+        post_rec.insert("id".to_string(), json!("post1"));
+        post_rec.insert("title".to_string(), json!("Hello"));
+        post_rec.insert("secret".to_string(), json!("secret1"));
+        repo.insert_record("posts", post_rec);
+
+        schema.add_collection(secrets);
+        schema.add_collection(posts.clone());
+
+        (repo, schema, posts)
+    }
+
+    #[test]
+    fn expand_view_rule_locked_hides_from_anonymous() {
+        // view_rule = None → locked (superusers only).
+        let (repo, schema, posts_col) = view_rule_setup(None);
+
+        let mut record = HashMap::new();
+        record.insert("id".to_string(), json!("post1"));
+        record.insert("secret".to_string(), json!("secret1"));
+
+        let paths = parse_expand("secret").unwrap();
+        let mut visited = HashSet::new();
+        let expand = expand_record(
+            &record,
+            &posts_col,
+            &paths,
+            &repo,
+            &schema,
+            &anonymous_auth(),
+            &mut visited,
+            0,
+        )
+        .unwrap();
+
+        // Anonymous user should NOT see the expanded secret.
+        assert!(
+            expand.get("secret").is_none(),
+            "locked view_rule must hide expanded record from anonymous user"
+        );
+    }
+
+    #[test]
+    fn expand_view_rule_locked_visible_to_superuser() {
+        // view_rule = None → locked, but superusers bypass.
+        let (repo, schema, posts_col) = view_rule_setup(None);
+
+        let mut record = HashMap::new();
+        record.insert("id".to_string(), json!("post1"));
+        record.insert("secret".to_string(), json!("secret1"));
+
+        let paths = parse_expand("secret").unwrap();
+        let mut visited = HashSet::new();
+        let expand = expand_record(
+            &record,
+            &posts_col,
+            &paths,
+            &repo,
+            &schema,
+            &superuser_auth(),
+            &mut visited,
+            0,
+        )
+        .unwrap();
+
+        // Superuser should see the expanded secret.
+        assert!(
+            expand.get("secret").is_some(),
+            "superuser must see expanded record even with locked view_rule"
+        );
+        assert_eq!(expand["secret"]["value"], json!("top-secret-data"));
+    }
+
+    #[test]
+    fn expand_view_rule_open_visible_to_anonymous() {
+        // view_rule = Some("") → open to everyone.
+        let (repo, schema, posts_col) = view_rule_setup(Some(String::new()));
+
+        let mut record = HashMap::new();
+        record.insert("id".to_string(), json!("post1"));
+        record.insert("secret".to_string(), json!("secret1"));
+
+        let paths = parse_expand("secret").unwrap();
+        let mut visited = HashSet::new();
+        let expand = expand_record(
+            &record,
+            &posts_col,
+            &paths,
+            &repo,
+            &schema,
+            &anonymous_auth(),
+            &mut visited,
+            0,
+        )
+        .unwrap();
+
+        // Open view_rule → visible.
+        assert!(
+            expand.get("secret").is_some(),
+            "open view_rule must allow anonymous access to expanded record"
+        );
+    }
+
+    #[test]
+    fn expand_view_rule_expression_denies_wrong_user() {
+        // view_rule = 'owner = @request.auth.id' → only the owner can view.
+        let (repo, schema, posts_col) =
+            view_rule_setup(Some("owner = @request.auth.id".to_string()));
+
+        let mut record = HashMap::new();
+        record.insert("id".to_string(), json!("post1"));
+        record.insert("secret".to_string(), json!("secret1"));
+
+        // Authenticate as user2 (not the owner).
+        let mut auth_fields = HashMap::new();
+        auth_fields.insert("id".to_string(), json!("user2"));
+        let auth = authenticated_auth(auth_fields);
+
+        let paths = parse_expand("secret").unwrap();
+        let mut visited = HashSet::new();
+        let expand = expand_record(
+            &record,
+            &posts_col,
+            &paths,
+            &repo,
+            &schema,
+            &auth,
+            &mut visited,
+            0,
+        )
+        .unwrap();
+
+        // user2 is NOT the owner → should not see the expanded record.
+        assert!(
+            expand.get("secret").is_none(),
+            "view_rule expression must deny access when user is not the owner"
+        );
+    }
+
+    #[test]
+    fn expand_view_rule_expression_allows_correct_user() {
+        // view_rule = 'owner = @request.auth.id' → only the owner can view.
+        let (repo, schema, posts_col) =
+            view_rule_setup(Some("owner = @request.auth.id".to_string()));
+
+        let mut record = HashMap::new();
+        record.insert("id".to_string(), json!("post1"));
+        record.insert("secret".to_string(), json!("secret1"));
+
+        // Authenticate as user1 (the owner).
+        let mut auth_fields = HashMap::new();
+        auth_fields.insert("id".to_string(), json!("user1"));
+        let auth = authenticated_auth(auth_fields);
+
+        let paths = parse_expand("secret").unwrap();
+        let mut visited = HashSet::new();
+        let expand = expand_record(
+            &record,
+            &posts_col,
+            &paths,
+            &repo,
+            &schema,
+            &auth,
+            &mut visited,
+            0,
+        )
+        .unwrap();
+
+        // user1 IS the owner → should see the expanded record.
+        assert!(
+            expand.get("secret").is_some(),
+            "view_rule expression must allow access when user matches the rule"
+        );
+        assert_eq!(expand["secret"]["value"], json!("top-secret-data"));
+    }
+
+    #[test]
+    fn expand_view_rule_back_relation_filters_unauthorized() {
+        use crate::schema::ApiRules;
+
+        let repo = MockRepo::new();
+        let mut schema = MockSchema::new();
+
+        // Posts collection (open).
+        let mut posts = Collection::base(
+            "posts",
+            vec![Field::new("title", FieldType::Text(TextOptions::default()))],
+        );
+        posts.id = "col_posts".to_string();
+        posts.rules = ApiRules::open();
+
+        // Comments collection with locked view_rule and a relation to posts.
+        let mut comments = Collection::base(
+            "comments",
+            vec![
+                Field::new("body", FieldType::Text(TextOptions::default())),
+                Field::new(
+                    "post",
+                    FieldType::Relation(RelationOptions {
+                        collection_id: "col_posts".to_string(),
+                        max_select: 1,
+                        ..Default::default()
+                    }),
+                ),
+            ],
+        );
+        comments.id = "col_comments".to_string();
+        comments.rules = ApiRules {
+            view_rule: None, // Locked
+            ..ApiRules::default()
+        };
+
+        // Seed a post and a comment referencing it.
+        let mut post_rec = HashMap::new();
+        post_rec.insert("id".to_string(), json!("post1"));
+        post_rec.insert("title".to_string(), json!("Hello"));
+        repo.insert_record("posts", post_rec.clone());
+
+        let mut comment_rec = HashMap::new();
+        comment_rec.insert("id".to_string(), json!("comment1"));
+        comment_rec.insert("body".to_string(), json!("Nice post"));
+        comment_rec.insert("post".to_string(), json!("post1"));
+        repo.insert_record("comments", comment_rec);
+
+        schema.add_collection(posts.clone());
+        schema.add_collection(comments);
+
+        let paths = parse_expand("comments_via_post").unwrap();
+        let mut visited = HashSet::new();
+
+        // Anonymous user expands back-relation → comments have locked view_rule.
+        let expand = expand_record(
+            &post_rec,
+            &posts,
+            &paths,
+            &repo,
+            &schema,
+            &anonymous_auth(),
+            &mut visited,
+            0,
+        )
+        .unwrap();
+
+        // Should NOT include the comment for anonymous.
+        assert!(
+            expand.get("comments_via_post").is_none(),
+            "back-relation expand must respect locked view_rule"
+        );
+
+        // Superuser should see the back-relation.
+        let mut visited2 = HashSet::new();
+        let expand2 = expand_record(
+            &post_rec,
+            &posts,
+            &paths,
+            &repo,
+            &schema,
+            &superuser_auth(),
+            &mut visited2,
+            0,
+        )
+        .unwrap();
+        assert!(
+            expand2.get("comments_via_post").is_some(),
+            "superuser must see back-relation even with locked view_rule"
+        );
+        let comments_arr = expand2["comments_via_post"].as_array().unwrap();
+        assert_eq!(comments_arr.len(), 1);
+        assert_eq!(comments_arr[0]["body"], json!("Nice post"));
+    }
+
+    #[test]
+    fn expand_records_batch_respects_view_rule() {
+        // Ensure batch expansion also respects view_rule.
+        let (repo, schema, posts_col) = view_rule_setup(None); // Locked
+
+        let mut records = vec![{
+            let mut r = HashMap::new();
+            r.insert("id".to_string(), json!("post1"));
+            r.insert("secret".to_string(), json!("secret1"));
+            r
+        }];
+
+        let paths = parse_expand("secret").unwrap();
+        expand_records(
+            &mut records,
+            &posts_col,
+            &paths,
+            &repo,
+            &schema,
+            &anonymous_auth(),
+        )
+        .unwrap();
+
+        // No expand field should be added because the secret collection is locked.
+        assert!(
+            records[0].get("expand").is_none(),
+            "expand_records must not add expand when view_rule denies access"
+        );
+    }
+
+    #[test]
+    fn expand_view_rule_locked_hides_from_authenticated_non_superuser() {
+        // An authenticated (but non-superuser) user should also be denied
+        // when view_rule is None (locked).
+        let (repo, schema, posts_col) = view_rule_setup(None);
+
+        let mut record = HashMap::new();
+        record.insert("id".to_string(), json!("post1"));
+        record.insert("secret".to_string(), json!("secret1"));
+
+        let mut auth_fields = HashMap::new();
+        auth_fields.insert("id".to_string(), json!("user99"));
+        let auth = authenticated_auth(auth_fields);
+
+        let paths = parse_expand("secret").unwrap();
+        let mut visited = HashSet::new();
+        let expand = expand_record(
+            &record,
+            &posts_col,
+            &paths,
+            &repo,
+            &schema,
+            &auth,
+            &mut visited,
+            0,
+        )
+        .unwrap();
+
+        assert!(
+            expand.get("secret").is_none(),
+            "locked view_rule must hide expanded record even from authenticated non-superuser"
+        );
+    }
+
+    #[test]
+    fn expand_multi_relation_partial_view_rule_filters_individually() {
+        // Multi-relation where the target collection has an expression-based
+        // view_rule. Some referenced records should pass, others shouldn't.
+        use crate::schema::ApiRules;
+
+        let repo = MockRepo::new();
+        let mut schema = MockSchema::new();
+
+        // Items collection: view_rule allows only records owned by the requester.
+        let mut items = Collection::base(
+            "items",
+            vec![
+                Field::new("name", FieldType::Text(TextOptions::default())),
+            ],
+        );
+        items.id = "col_items".to_string();
+        items.rules = ApiRules {
+            view_rule: Some("owner = @request.auth.id".to_string()),
+            list_rule: Some(String::new()),
+            ..ApiRules::default()
+        };
+
+        // Container collection with multi-relation to items.
+        let mut containers = Collection::base(
+            "containers",
+            vec![
+                Field::new("label", FieldType::Text(TextOptions::default())),
+                Field::new(
+                    "items",
+                    FieldType::Relation(RelationOptions {
+                        collection_id: "items".to_string(),
+                        max_select: 0,
+                        ..Default::default()
+                    }),
+                ),
+            ],
+        );
+        containers.id = "col_containers".to_string();
+        containers.rules = ApiRules::open();
+
+        schema.add_collection(items);
+        schema.add_collection(containers);
+
+        // Seed items: item1 owned by user1, item2 owned by user2.
+        let mut item1 = HashMap::new();
+        item1.insert("id".to_string(), json!("item1"));
+        item1.insert("name".to_string(), json!("Widget"));
+        item1.insert("owner".to_string(), json!("user1"));
+        repo.insert_record("items", item1);
+
+        let mut item2 = HashMap::new();
+        item2.insert("id".to_string(), json!("item2"));
+        item2.insert("name".to_string(), json!("Gadget"));
+        item2.insert("owner".to_string(), json!("user2"));
+        repo.insert_record("items", item2);
+
+        let containers_col = schema.get_collection("containers").unwrap();
+        let mut record = HashMap::new();
+        record.insert("id".to_string(), json!("container1"));
+        record.insert("label".to_string(), json!("Mixed"));
+        record.insert("items".to_string(), json!(["item1", "item2"]));
+
+        // Authenticate as user1 — should only see item1.
+        let mut auth_fields = HashMap::new();
+        auth_fields.insert("id".to_string(), json!("user1"));
+        let auth = authenticated_auth(auth_fields);
+
+        let paths = parse_expand("items").unwrap();
+        let mut visited = HashSet::new();
+        let expand = expand_record(
+            &record,
+            &containers_col,
+            &paths,
+            &repo,
+            &schema,
+            &auth,
+            &mut visited,
+            0,
+        )
+        .unwrap();
+
+        let items_arr = expand["items"].as_array().unwrap();
+        assert_eq!(
+            items_arr.len(),
+            1,
+            "only the record passing view_rule should be expanded"
+        );
+        assert_eq!(items_arr[0]["name"], "Widget");
+    }
+
+    #[test]
+    fn expand_nested_locked_intermediate_hides_deeper_levels() {
+        // Expanding `secret.nested_ref` where `secrets` has a locked view_rule.
+        // The expansion should stop at the locked intermediate collection.
+        use crate::schema::ApiRules;
+
+        let repo = MockRepo::new();
+        let mut schema = MockSchema::new();
+
+        // Deep collection (open).
+        let mut deep = Collection::base(
+            "deep",
+            vec![Field::new("data", FieldType::Text(TextOptions::default()))],
+        );
+        deep.id = "col_deep".to_string();
+        deep.rules = ApiRules::open();
+
+        // Secrets collection (locked view_rule) with relation to deep.
+        let mut secrets = Collection::base(
+            "secrets",
+            vec![
+                Field::new("value", FieldType::Text(TextOptions::default())),
+                Field::new(
+                    "nested_ref",
+                    FieldType::Relation(RelationOptions {
+                        collection_id: "deep".to_string(),
+                        max_select: 1,
+                        ..Default::default()
+                    }),
+                ),
+            ],
+        );
+        secrets.id = "col_secrets".to_string();
+        secrets.rules = ApiRules {
+            view_rule: None, // Locked
+            ..ApiRules::default()
+        };
+
+        // Posts collection (open) with relation to secrets.
+        let mut posts = Collection::base(
+            "posts",
+            vec![
+                Field::new("title", FieldType::Text(TextOptions::default())),
+                Field::new(
+                    "secret",
+                    FieldType::Relation(RelationOptions {
+                        collection_id: "secrets".to_string(),
+                        max_select: 1,
+                        ..Default::default()
+                    }),
+                ),
+            ],
+        );
+        posts.id = "col_posts".to_string();
+        posts.rules = ApiRules::open();
+
+        // Seed data.
+        let mut deep_rec = HashMap::new();
+        deep_rec.insert("id".to_string(), json!("deep1"));
+        deep_rec.insert("data".to_string(), json!("deep-data"));
+        repo.insert_record("deep", deep_rec);
+
+        let mut secret_rec = HashMap::new();
+        secret_rec.insert("id".to_string(), json!("secret1"));
+        secret_rec.insert("value".to_string(), json!("top-secret"));
+        secret_rec.insert("nested_ref".to_string(), json!("deep1"));
+        repo.insert_record("secrets", secret_rec);
+
+        let mut post_rec = HashMap::new();
+        post_rec.insert("id".to_string(), json!("post1"));
+        post_rec.insert("title".to_string(), json!("Hello"));
+        post_rec.insert("secret".to_string(), json!("secret1"));
+        repo.insert_record("posts", post_rec.clone());
+
+        schema.add_collection(deep);
+        schema.add_collection(secrets);
+        schema.add_collection(posts.clone());
+
+        // Anonymous user tries to expand secret.nested_ref.
+        let paths = parse_expand("secret.nested_ref").unwrap();
+        let mut visited = HashSet::new();
+        let expand = expand_record(
+            &post_rec,
+            &posts,
+            &paths,
+            &repo,
+            &schema,
+            &anonymous_auth(),
+            &mut visited,
+            0,
+        )
+        .unwrap();
+
+        // Secret is locked → not expanded, so nested_ref is also unreachable.
+        assert!(
+            expand.get("secret").is_none(),
+            "nested expansion must stop at locked intermediate collection"
+        );
+    }
+
+    #[test]
+    fn expand_manage_rule_bypasses_view_rule() {
+        // If the target collection has manage_rule = Some("") and the user is
+        // authenticated, they should see expanded records even with a locked view_rule.
+        use crate::schema::ApiRules;
+
+        let repo = MockRepo::new();
+        let mut schema = MockSchema::new();
+
+        let mut secrets = Collection::base(
+            "secrets",
+            vec![Field::new("value", FieldType::Text(TextOptions::default()))],
+        );
+        secrets.id = "col_secrets".to_string();
+        secrets.rules = ApiRules {
+            view_rule: None,                   // Locked
+            manage_rule: Some(String::new()),  // Any authenticated user can manage
+            ..ApiRules::default()
+        };
+
+        let mut posts = Collection::base(
+            "posts",
+            vec![
+                Field::new("title", FieldType::Text(TextOptions::default())),
+                Field::new(
+                    "secret",
+                    FieldType::Relation(RelationOptions {
+                        collection_id: "secrets".to_string(),
+                        max_select: 1,
+                        ..Default::default()
+                    }),
+                ),
+            ],
+        );
+        posts.id = "col_posts".to_string();
+        posts.rules = ApiRules::open();
+
+        let mut secret_rec = HashMap::new();
+        secret_rec.insert("id".to_string(), json!("secret1"));
+        secret_rec.insert("value".to_string(), json!("managed-data"));
+        repo.insert_record("secrets", secret_rec);
+
+        let mut post_rec = HashMap::new();
+        post_rec.insert("id".to_string(), json!("post1"));
+        post_rec.insert("secret".to_string(), json!("secret1"));
+        repo.insert_record("posts", post_rec.clone());
+
+        schema.add_collection(secrets);
+        schema.add_collection(posts.clone());
+
+        // Authenticated user should see the secret via manage_rule bypass.
+        let mut auth_fields = HashMap::new();
+        auth_fields.insert("id".to_string(), json!("user1"));
+        let auth = authenticated_auth(auth_fields);
+
+        let paths = parse_expand("secret").unwrap();
+        let mut visited = HashSet::new();
+        let expand = expand_record(
+            &post_rec,
+            &posts,
+            &paths,
+            &repo,
+            &schema,
+            &auth,
+            &mut visited,
+            0,
+        )
+        .unwrap();
+
+        assert!(
+            expand.get("secret").is_some(),
+            "manage_rule should bypass locked view_rule for authenticated user"
+        );
+        assert_eq!(expand["secret"]["value"], json!("managed-data"));
+
+        // But anonymous should still be denied (manage_rule requires auth).
+        let mut visited2 = HashSet::new();
+        let expand2 = expand_record(
+            &post_rec,
+            &posts,
+            &paths,
+            &repo,
+            &schema,
+            &anonymous_auth(),
+            &mut visited2,
+            0,
+        )
+        .unwrap();
+
+        assert!(
+            expand2.get("secret").is_none(),
+            "anonymous must not benefit from manage_rule bypass"
+        );
+    }
+
+    #[test]
+    fn expand_back_relation_expression_view_rule_filters_per_record() {
+        // Back-relation expansion where the source collection has an
+        // expression-based view_rule: only matching records are included.
+        use crate::schema::ApiRules;
+
+        let repo = MockRepo::new();
+        let mut schema = MockSchema::new();
+
+        let mut posts = Collection::base(
+            "posts",
+            vec![Field::new("title", FieldType::Text(TextOptions::default()))],
+        );
+        posts.id = "col_posts".to_string();
+        posts.rules = ApiRules::open();
+
+        // Comments: view_rule = 'author = @request.auth.id'
+        let mut comments = Collection::base(
+            "comments",
+            vec![
+                Field::new("body", FieldType::Text(TextOptions::default())),
+                Field::new(
+                    "post",
+                    FieldType::Relation(RelationOptions {
+                        collection_id: "col_posts".to_string(),
+                        max_select: 1,
+                        ..Default::default()
+                    }),
+                ),
+                Field::new("author", FieldType::Text(TextOptions::default())),
+            ],
+        );
+        comments.id = "col_comments".to_string();
+        comments.rules = ApiRules {
+            view_rule: Some("author = @request.auth.id".to_string()),
+            list_rule: Some(String::new()),
+            ..ApiRules::default()
+        };
+
+        schema.add_collection(posts.clone());
+        schema.add_collection(comments);
+
+        // Seed: two comments on post1, by different authors.
+        let mut post_rec = HashMap::new();
+        post_rec.insert("id".to_string(), json!("post1"));
+        post_rec.insert("title".to_string(), json!("Hello"));
+        repo.insert_record("posts", post_rec.clone());
+
+        let mut cmt1 = HashMap::new();
+        cmt1.insert("id".to_string(), json!("cmt1"));
+        cmt1.insert("body".to_string(), json!("My comment"));
+        cmt1.insert("post".to_string(), json!("post1"));
+        cmt1.insert("author".to_string(), json!("user1"));
+        repo.insert_record("comments", cmt1);
+
+        let mut cmt2 = HashMap::new();
+        cmt2.insert("id".to_string(), json!("cmt2"));
+        cmt2.insert("body".to_string(), json!("Other comment"));
+        cmt2.insert("post".to_string(), json!("post1"));
+        cmt2.insert("author".to_string(), json!("user2"));
+        repo.insert_record("comments", cmt2);
+
+        // user1 should only see their own comment.
+        let mut auth_fields = HashMap::new();
+        auth_fields.insert("id".to_string(), json!("user1"));
+        let auth = authenticated_auth(auth_fields);
+
+        let paths = parse_expand("comments_via_post").unwrap();
+        let mut visited = HashSet::new();
+        let expand = expand_record(
+            &post_rec,
+            &posts,
+            &paths,
+            &repo,
+            &schema,
+            &auth,
+            &mut visited,
+            0,
+        )
+        .unwrap();
+
+        let comments_arr = expand["comments_via_post"].as_array().unwrap();
+        assert_eq!(
+            comments_arr.len(),
+            1,
+            "back-relation should only include records passing view_rule"
+        );
+        assert_eq!(comments_arr[0]["body"], json!("My comment"));
     }
 }

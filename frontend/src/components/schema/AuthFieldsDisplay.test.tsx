@@ -23,9 +23,9 @@ describe('AuthFieldsDisplay', () => {
     expect(screen.getByText('Auth System Fields')).toBeInTheDocument();
   });
 
-  it('shows the "Auto-included" badge', () => {
+  it('shows the "AUTO-INCLUDED" badge', () => {
     render(<AuthFieldsDisplay collectionType="auth" />);
-    expect(screen.getByText('Auto-included')).toBeInTheDocument();
+    expect(screen.getByText('AUTO-INCLUDED')).toBeInTheDocument();
   });
 
   it('shows explanatory text about auto-managed fields', () => {

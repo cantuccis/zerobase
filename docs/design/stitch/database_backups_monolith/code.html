@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "tertiary-fixed": "#5e5e5e",
+              "tertiary-fixed-dim": "#474747",
+              "surface-container": "#eeeeee",
+              "primary-fixed-dim": "#474747",
+              "on-primary-fixed": "#ffffff",
+              "on-primary": "#e2e2e2",
+              "secondary-fixed": "#c6c6c6",
+              "primary-container": "#3b3b3b",
+              "on-primary-container": "#ffffff",
+              "tertiary-container": "#747474",
+              "tertiary": "#3b3b3b",
+              "on-tertiary-fixed": "#ffffff",
+              "on-surface-variant": "#474747",
+              "outline-variant": "#c6c6c6",
+              "on-error-container": "#410002",
+              "on-tertiary-container": "#ffffff",
+              "secondary": "#5e5e5e",
+              "on-tertiary-fixed-variant": "#e2e2e2",
+              "on-secondary": "#ffffff",
+              "error": "#ba1a1a",
+              "surface-container-low": "#f3f3f4",
+              "inverse-on-surface": "#f0f1f1",
+              "secondary-container": "#d4d4d4",
+              "primary": "#000000",
+              "surface-dim": "#dadada",
+              "on-background": "#1a1c1c",
+              "on-secondary-fixed": "#1b1b1b",
+              "inverse-primary": "#c6c6c6",
+              "on-primary-fixed-variant": "#e2e2e2",
+              "on-secondary-fixed-variant": "#3b3b3b",
+              "surface-container-highest": "#e2e2e2",
+              "background": "#f9f9f9",
+              "surface-tint": "#5e5e5e",
+              "surface-bright": "#f9f9f9",
+              "surface": "#f9f9f9",
+              "outline": "#777777",
+              "on-secondary-container": "#1b1b1b",
+              "inverse-surface": "#2f3131",
+              "on-tertiary": "#e2e2e2",
+              "surface-container-lowest": "#ffffff",
+              "on-error": "#ffffff",
+              "error-container": "#ffdad6",
+              "on-surface": "#1a1c1c",
+              "surface-variant": "#e2e2e2",
+              "surface-container-high": "#e8e8e8",
+              "primary-fixed": "#5e5e5e",
+              "secondary-fixed-dim": "#ababab"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0px", "lg": "0px", "xl": "0px", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-surface">
+<!-- SIDE NAVIGATION BAR -->
+<aside class="fixed left-0 top-0 h-full flex flex-col h-screen w-64 border-r border-black dark:border-white rounded-none bg-white dark:bg-black z-50">
+<div class="p-8">
+<h1 class="text-lg font-black tracking-tighter text-black dark:text-white">BACKEND_ENGINE</h1>
+<p class="font-['Inter'] uppercase tracking-widest text-[12px] font-bold text-zinc-500 mt-1">V2.0.4_STABLE</p>
+</div>
+<nav class="flex-1 px-0">
+<!-- Dashboard Tab -->
+<a class="flex items-center px-8 py-4 font-['Inter'] uppercase tracking-widest text-[12px] font-bold transition-none text-zinc-500 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- Collections Tab -->
+<a class="flex items-center px-8 py-4 font-['Inter'] uppercase tracking-widest text-[12px] font-bold transition-none text-zinc-500 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="database">database</span>
+<span>Collections</span>
+</a>
+<!-- Logs Tab -->
+<a class="flex items-center px-8 py-4 font-['Inter'] uppercase tracking-widest text-[12px] font-bold transition-none text-zinc-500 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="terminal">terminal</span>
+<span>Logs</span>
+</a>
+<!-- Settings Tab -->
+<a class="flex items-center px-8 py-4 font-['Inter'] uppercase tracking-widest text-[12px] font-bold transition-none text-zinc-500 hover:text-black dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+<!-- Backups Tab (ACTIVE) -->
+<a class="flex items-center px-8 py-4 font-['Inter'] uppercase tracking-widest text-[12px] font-bold transition-none bg-black text-white dark:bg-white dark:text-black border-l-4 border-black dark:border-white" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="settings_backup_restore">settings_backup_restore</span>
+<span>Backups</span>
+</a>
+</nav>
+<div class="p-8 border-t border-black dark:border-white">
+<button class="w-full bg-black text-white dark:bg-white dark:text-black py-4 font-bold uppercase tracking-widest text-[12px] hover:opacity-90 transition-none">
+                New Record
+            </button>
+</div>
+</aside>
+<!-- TOP NAVIGATION BAR -->
+<header class="flex items-center justify-between px-8 ml-64 w-[calc(100%-16rem)] h-16 border-b border-black dark:border-white rounded-none bg-white dark:bg-black fixed top-0 z-40">
+<div class="flex items-center gap-6">
+<span class="font-['Inter'] text-sm font-medium text-black dark:text-white">System Status: Active</span>
+<div class="flex gap-4 ml-4">
+<a class="font-['Inter'] text-sm font-medium text-zinc-500 hover:text-black dark:hover:text-white transition-none" href="#">Docs</a>
+<a class="font-['Inter'] text-sm font-medium text-zinc-500 hover:text-black dark:hover:text-white transition-none" href="#">API</a>
+<a class="font-['Inter'] text-sm font-medium text-zinc-500 hover:text-black dark:hover:text-white transition-none" href="#">Support</a>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative group">
+<span class="material-symbols-outlined text-black dark:text-white cursor-pointer" data-icon="notifications">notifications</span>
+</div>
+<div class="relative group">
+<span class="material-symbols-outlined text-black dark:text-white cursor-pointer" data-icon="account_circle">account_circle</span>
+</div>
+<button class="bg-black text-white dark:bg-white dark:text-black px-6 py-2 font-['Inter'] text-sm font-medium transition-none">
+                New Record
+            </button>
+</div>
+</header>
+<!-- MAIN CONTENT CANVAS -->
+<main class="ml-64 pt-16 min-h-screen">
+<div class="p-16 max-w-7xl mx-auto">
+<!-- Hero Header Section -->
+<section class="mb-16">
+<div class="flex items-end justify-between mb-8">
+<div>
+<p class="font-['Inter'] text-[12px] font-bold uppercase tracking-[0.2em] text-outline mb-4">Storage / System</p>
+<h2 class="text-[3.5rem] font-extrabold leading-none tracking-tighter text-primary">DATABASE BACKUPS</h2>
+</div>
+<div class="pb-2">
+<button class="bg-primary text-white px-10 py-5 text-[14px] font-bold uppercase tracking-widest flex items-center gap-3 transition-none active:scale-[0.98]">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+                            Create Backup
+                        </button>
+</div>
+</div>
+<div class="h-1 bg-primary w-24 mb-16"></div>
+</section>
+<!-- Grid Content -->
+<div class="grid grid-cols-12 gap-0 border border-primary">
+<!-- Table Header -->
+<div class="col-span-6 border-r border-b border-primary p-4 bg-surface-container-low">
+<span class="font-['Inter'] text-[11px] font-bold uppercase tracking-widest">Name &amp; Path</span>
+</div>
+<div class="col-span-2 border-r border-b border-primary p-4 bg-surface-container-low text-center">
+<span class="font-['Inter'] text-[11px] font-bold uppercase tracking-widest">Snapshot Date</span>
+</div>
+<div class="col-span-2 border-r border-b border-primary p-4 bg-surface-container-low text-center">
+<span class="font-['Inter'] text-[11px] font-bold uppercase tracking-widest">Size (Compressed)</span>
+</div>
+<div class="col-span-2 border-b border-primary p-4 bg-surface-container-low text-center">
+<span class="font-['Inter'] text-[11px] font-bold uppercase tracking-widest">Actions</span>
+</div>
+<!-- Table Row 1 -->
+<div class="col-span-6 border-r border-b border-primary p-6 flex items-center gap-4">
+<span class="material-symbols-outlined text-primary scale-125" data-icon="zip_box">folder_zip</span>
+<div>
+<p class="font-['Inter'] font-semibold text-lg">pb_backup_20231124_01.zip</p>
+<code class="text-[10px] text-outline uppercase tracking-wider">pb_data/backups/production_stable</code>
+</div>
+</div>
+<div class="col-span-2 border-r border-b border-primary p-6 flex items-center justify-center">
+<p class="font-['Inter'] text-[14px]">Nov 24, 2023 — 01:45 AM</p>
+</div>
+<div class="col-span-2 border-r border-b border-primary p-6 flex items-center justify-center">
+<p class="font-['Inter'] font-bold text-lg">1.4 GB</p>
+</div>
+<div class="col-span-2 border-b border-primary p-6 flex items-center justify-center gap-4">
+<button class="p-2 hover:bg-black hover:text-white transition-none border border-transparent hover:border-black" title="Restore">
+<span class="material-symbols-outlined text-[20px]" data-icon="settings_backup_restore">settings_backup_restore</span>
+</button>
+<button class="p-2 hover:bg-black hover:text-white transition-none border border-transparent hover:border-black" title="Download">
+<span class="material-symbols-outlined text-[20px]" data-icon="download">download</span>
+</button>
+<button class="p-2 hover:bg-error hover:text-white transition-none border border-transparent hover:border-error" title="Delete">
+<span class="material-symbols-outlined text-[20px]" data-icon="delete">delete</span>
+</button>
+</div>
+<!-- Table Row 2 -->
+<div class="col-span-6 border-r border-b border-primary p-6 flex items-center gap-4">
+<span class="material-symbols-outlined text-primary scale-125" data-icon="zip_box">folder_zip</span>
+<div>
+<p class="font-['Inter'] font-semibold text-lg">pb_backup_20231123_01.zip</p>
+<code class="text-[10px] text-outline uppercase tracking-wider">pb_data/backups/automated_daily</code>
+</div>
+</div>
+<div class="col-span-2 border-r border-b border-primary p-6 flex items-center justify-center">
+<p class="font-['Inter'] text-[14px]">Nov 23, 2023 — 01:00 AM</p>
+</div>
+<div class="col-span-2 border-r border-b border-primary p-6 flex items-center justify-center">
+<p class="font-['Inter'] font-bold text-lg">1.2 GB</p>
+</div>
+<div class="col-span-2 border-b border-primary p-6 flex items-center justify-center gap-4">
+<button class="p-2 hover:bg-black hover:text-white transition-none border border-transparent hover:border-black" title="Restore">
+<span class="material-symbols-outlined text-[20px]" data-icon="settings_backup_restore">settings_backup_restore</span>
+</button>
+<button class="p-2 hover:bg-black hover:text-white transition-none border border-transparent hover:border-black" title="Download">
+<span class="material-symbols-outlined text-[20px]" data-icon="download">download</span>
+</button>
+<button class="p-2 hover:bg-error hover:text-white transition-none border border-transparent hover:border-error" title="Delete">
+<span class="material-symbols-outlined text-[20px]" data-icon="delete">delete</span>
+</button>
+</div>
+<!-- Table Row 3 -->
+<div class="col-span-6 border-r border-b border-primary p-6 flex items-center gap-4">
+<span class="material-symbols-outlined text-primary scale-125" data-icon="zip_box">folder_zip</span>
+<div>
+<p class="font-['Inter'] font-semibold text-lg">pre_migration_v2_core.zip</p>
+<code class="text-[10px] text-outline uppercase tracking-wider">pb_data/backups/manual_snapshots</code>
+</div>
+</div>
+<div class="col-span-2 border-r border-b border-primary p-6 flex items-center justify-center">
+<p class="font-['Inter'] text-[14px]">Nov 20, 2023 — 11:15 PM</p>
+</div>
+<div class="col-span-2 border-r border-b border-primary p-6 flex items-center justify-center">
+<p class="font-['Inter'] font-bold text-lg">840 MB</p>
+</div>
+<div class="col-span-2 border-b border-primary p-6 flex items-center justify-center gap-4">
+<button class="p-2 hover:bg-black hover:text-white transition-none border border-transparent hover:border-black" title="Restore">
+<span class="material-symbols-outlined text-[20px]" data-icon="settings_backup_restore">settings_backup_restore</span>
+</button>
+<button class="p-2 hover:bg-black hover:text-white transition-none border border-transparent hover:border-black" title="Download">
+<span class="material-symbols-outlined text-[20px]" data-icon="download">download</span>
+</button>
+<button class="p-2 hover:bg-error hover:text-white transition-none border border-transparent hover:border-error" title="Delete">
+<span class="material-symbols-outlined text-[20px]" data-icon="delete">delete</span>
+</button>
+</div>
+</div>
+<!-- Warning/Technical Note Section -->
+<div class="mt-16 p-8 border-l-4 border-primary bg-surface-container flex items-start gap-6">
+<div class="bg-primary text-white p-2">
+<span class="material-symbols-outlined text-[24px]" data-icon="warning">warning</span>
+</div>
+<div>
+<h4 class="font-['Inter'] text-[12px] font-bold uppercase tracking-widest mb-2 text-primary">Technical Performance Note</h4>
+<p class="font-['Inter'] text-sm leading-relaxed max-w-3xl text-on-surface">
+                        Database operations will enter a <span class="font-bold underline">READ-ONLY</span> state during the ZIP compression process. New record creation, file uploads, and session updates will be queued until the backup snapshot is successfully finalized in <code class="bg-white px-1">pb_data/backups</code>. For high-traffic environments, we recommend scheduling backups during maintenance windows.
+                    </p>
+</div>
+</div>
+<!-- Technical Detail Grid Footer -->
+<div class="mt-16 grid grid-cols-4 gap-4">
+<div class="border border-outline-variant p-6">
+<p class="font-['Inter'] text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Total Backups</p>
+<p class="text-4xl font-extrabold text-primary">12</p>
+</div>
+<div class="border border-outline-variant p-6">
+<p class="font-['Inter'] text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Storage Used</p>
+<p class="text-4xl font-extrabold text-primary">14.8 GB</p>
+</div>
+<div class="border border-outline-variant p-6">
+<p class="font-['Inter'] text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Retention Policy</p>
+<p class="text-4xl font-extrabold text-primary">30 D</p>
+</div>
+<div class="border border-outline-variant p-6">
+<p class="font-['Inter'] text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Last Integrity Check</p>
+<p class="text-4xl font-extrabold text-primary">PASS</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Visual Polish: Architectural Grid Overlay (Subtle) -->
+<div class="fixed inset-0 pointer-events-none opacity-[0.03] z-[-1] overflow-hidden">
+<div class="h-full w-full bg-[linear-gradient(to_right,#000_1px,transparent_1px),linear-gradient(to_bottom,#000_1px,transparent_1px)] bg-[size:100px_100px]"></div>
+</div>
+</body></html>

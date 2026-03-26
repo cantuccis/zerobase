@@ -17,13 +17,13 @@ export const DEFAULT_AUTH_OPTIONS: AuthOptions = {
 // ── Styles ──────────────────────────────────────────────────────────────────
 
 const TOGGLE_CLASS =
-  'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus:ring-blue-500 focus:ring-offset-2';
+  'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer border-2 border-primary';
 
 const TOGGLE_KNOB_CLASS =
-  'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-800 shadow ring-0 transition duration-200 ease-in-out';
+  'pointer-events-none inline-block h-5 w-5 transform bg-on-primary ring-0';
 
 const INPUT_CLASS =
-  'w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus-visible:outline-none focus-visible:ring-1 focus:ring-blue-500';
+  'w-full border border-primary px-3 py-1.5 text-sm text-on-surface bg-background placeholder-outline focus:outline-none focus:border-primary';
 
 // ── Props ───────────────────────────────────────────────────────────────────
 
@@ -40,16 +40,11 @@ export function AuthSettingsEditor({ authOptions, onChange }: AuthSettingsEditor
   }
 
   return (
-    <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6" data-testid="auth-settings-editor">
-      <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Auth Settings</h3>
-      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-        Configure authentication methods and security policies for this collection.
-      </p>
-
+    <div data-testid="auth-settings-editor">
       {/* ── Auth Methods ──────────────────────────────────────────────── */}
-      <div className="mt-5">
-        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Authentication Methods</h4>
-        <div className="mt-3 space-y-4">
+      <div>
+        <h4 className="text-label-md text-on-surface-variant mb-3">Authentication Methods</h4>
+        <div className="space-y-4">
           {/* Email/Password Auth */}
           <ToggleRow
             id="allow-email-auth"
@@ -90,11 +85,11 @@ export function AuthSettingsEditor({ authOptions, onChange }: AuthSettingsEditor
 
       {/* ── MFA Duration (shown when MFA enabled) ────────────────────── */}
       {authOptions.mfaEnabled && (
-        <div className="mt-4 ml-6 rounded-md border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3" data-testid="mfa-duration-section">
-          <label htmlFor="mfa-duration" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <div className="mt-4 ml-6 border border-outline-variant bg-surface-container-low p-3" data-testid="mfa-duration-section">
+          <label htmlFor="mfa-duration" className="text-label-sm text-on-surface-variant block mb-1">
             MFA Session Duration (seconds)
           </label>
-          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-secondary mb-1.5">
             How long a partial MFA token is valid. Use 0 for system default.
           </p>
           <input
@@ -103,17 +98,17 @@ export function AuthSettingsEditor({ authOptions, onChange }: AuthSettingsEditor
             min={0}
             value={authOptions.mfaDuration}
             onChange={(e) => update({ mfaDuration: Math.max(0, parseInt(e.target.value, 10) || 0) })}
-            className={`${INPUT_CLASS} mt-1.5 w-32`}
+            className={`${INPUT_CLASS} w-32`}
             data-testid="mfa-duration"
           />
         </div>
       )}
 
       {/* ── Password Requirements ─────────────────────────────────────── */}
-      <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-5">
-        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Password Requirements</h4>
-        <div className="mt-3">
-          <label htmlFor="min-password-length" className="block text-sm text-gray-600 dark:text-gray-400">
+      <div className="mt-6 border-t border-primary pt-5">
+        <h4 className="text-label-md text-on-surface-variant mb-3">Password Requirements</h4>
+        <div>
+          <label htmlFor="min-password-length" className="text-label-sm text-on-surface-variant block mb-1">
             Minimum Password Length
           </label>
           <input
@@ -123,34 +118,33 @@ export function AuthSettingsEditor({ authOptions, onChange }: AuthSettingsEditor
             max={72}
             value={authOptions.minPasswordLength}
             onChange={(e) => update({ minPasswordLength: Math.max(1, parseInt(e.target.value, 10) || 8) })}
-            className={`${INPUT_CLASS} mt-1 w-32`}
+            className={`${INPUT_CLASS} w-32`}
             data-testid="min-password-length"
           />
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Must be at least 1. Recommended: 8 or higher.</p>
+          <p className="mt-1 text-xs text-secondary">Must be at least 1. Recommended: 8 or higher.</p>
         </div>
       </div>
 
       {/* ── Email Policy ──────────────────────────────────────────────── */}
-      <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-5">
-        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Email Policy</h4>
-        <div className="mt-3">
-          <ToggleRow
-            id="require-email"
-            label="Require Email Verification"
-            description="Users must verify their email before they can authenticate."
-            checked={authOptions.requireEmail}
-            onChange={(checked) => update({ requireEmail: checked })}
-          />
-        </div>
+      <div className="mt-6 border-t border-primary pt-5">
+        <h4 className="text-label-md text-on-surface-variant mb-3">Email Policy</h4>
+        <ToggleRow
+          id="require-email"
+          label="Require Email Verification"
+          description="Users must verify their email before they can authenticate."
+          checked={authOptions.requireEmail}
+          onChange={(checked) => update({ requireEmail: checked })}
+        />
       </div>
 
       {/* ── Identity Fields ───────────────────────────────────────────── */}
-      <div className="mt-6 border-t border-gray-100 dark:border-gray-700 pt-5">
-        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Identity Fields</h4>
-        <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+      <div className="mt-6 border-t border-primary pt-5">
+        <label htmlFor="auth-identity-fields" className="text-label-md text-on-surface-variant mb-2 block">Identity Fields</label>
+        <p className="text-xs text-secondary mb-1.5">
           Fields that can be used as login identity (comma-separated).
         </p>
         <input
+          id="auth-identity-fields"
           type="text"
           value={authOptions.identityFields.join(', ')}
           onChange={(e) =>
@@ -162,11 +156,11 @@ export function AuthSettingsEditor({ authOptions, onChange }: AuthSettingsEditor
             })
           }
           placeholder="email"
-          className={`${INPUT_CLASS} mt-1.5`}
+          className={INPUT_CLASS}
           data-testid="identity-fields"
         />
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -184,10 +178,10 @@ function ToggleRow({ id, label, description, checked, onChange }: ToggleRowProps
   return (
     <div className="flex items-start justify-between gap-4">
       <div className="min-w-0">
-        <label htmlFor={id} className="text-sm font-medium text-gray-900 dark:text-gray-100">
+        <label htmlFor={id} className="text-sm font-semibold text-on-surface">
           {label}
         </label>
-        <p className="text-xs text-gray-500 dark:text-gray-400">{description}</p>
+        <p className="text-xs text-secondary">{description}</p>
       </div>
       <button
         type="button"
@@ -195,7 +189,7 @@ function ToggleRow({ id, label, description, checked, onChange }: ToggleRowProps
         id={id}
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`${TOGGLE_CLASS} ${checked ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'}`}
+        className={`${TOGGLE_CLASS} ${checked ? 'bg-primary' : 'bg-surface-container'}`}
         data-testid={id}
       >
         <span className={`${TOGGLE_KNOB_CLASS} ${checked ? 'translate-x-5' : 'translate-x-0'}`} />

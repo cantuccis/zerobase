@@ -80,17 +80,17 @@ function FieldWrapper({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-1" data-testid={`field-input-${field.name}`}>
-      <label htmlFor={`field-${field.name}`} className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
+    <div className="space-y-1.5" data-testid={`field-input-${field.name}`}>
+      <label htmlFor={`field-${field.name}`} className="flex items-center gap-1.5 text-label-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant dark:text-on-surface-variant">
         {field.name}
-        {field.required && <span className="text-red-500 dark:text-red-400" aria-label="required">*</span>}
+        {field.required && <span className="text-error dark:text-error" aria-label="required">*</span>}
         {field.unique && (
-          <span className="rounded bg-gray-100 dark:bg-gray-700 px-1 py-0.5 text-[10px] font-normal text-gray-500 dark:text-gray-400">unique</span>
+          <span className="border border-outline-variant dark:border-outline-variant bg-surface-container-low dark:bg-surface-container-low px-1 py-0.5 text-[10px] font-normal uppercase text-secondary dark:text-secondary">unique</span>
         )}
       </label>
       {children}
       {error && (
-        <p className="text-xs text-red-600 dark:text-red-400" role="alert" data-testid={`field-error-${field.name}`}>
+        <p className="text-xs text-error dark:text-error" role="alert" data-testid={`field-error-${field.name}`}>
           {error}
         </p>
       )}
@@ -99,10 +99,10 @@ function FieldWrapper({
 }
 
 const inputClasses =
-  'w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus-visible:outline-none focus-visible:ring-1 focus:ring-blue-500 disabled:bg-gray-50 dark:disabled:bg-gray-900 disabled:text-gray-500 dark:disabled:text-gray-400';
+  'w-full border border-primary dark:border-on-primary bg-surface dark:bg-surface px-3 py-2 text-sm text-on-surface dark:text-on-surface placeholder-secondary dark:placeholder-secondary focus:border-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary disabled:bg-surface-dim dark:disabled:bg-surface-dim disabled:text-secondary dark:disabled:text-secondary';
 
 const errorInputClasses =
-  'w-full rounded-md border border-red-300 dark:border-red-700 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:border-red-500 focus-visible:outline-none focus-visible:ring-1 focus:ring-red-500';
+  'w-full border border-error dark:border-error bg-surface dark:bg-surface px-3 py-2 text-sm text-on-surface dark:text-on-surface placeholder-secondary dark:placeholder-secondary focus:border-error focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-error';
 
 // ── Text ─────────────────────────────────────────────────────────────────────
 
@@ -140,7 +140,7 @@ function TextInput({
         />
       )}
       {options.maxLength > 0 && (
-        <p className="text-xs text-gray-400 dark:text-gray-500">{val.length}/{options.maxLength}</p>
+        <p className="text-xs text-secondary dark:text-secondary">{val.length}/{options.maxLength}</p>
       )}
     </FieldWrapper>
   );
@@ -188,25 +188,25 @@ function BoolInput({ field, value, onChange, error }: FieldInputProps) {
 
   return (
     <FieldWrapper field={field} error={error}>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         <button
           id={`field-${field.name}`}
           type="button"
           role="switch"
           aria-checked={checked}
           onClick={() => onChange(field.name, !checked)}
-          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
-            checked ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer border border-primary dark:border-on-primary ${
+            checked ? 'bg-primary dark:bg-on-primary' : 'bg-surface-container dark:bg-surface-container'
           }`}
           data-testid={`bool-toggle-${field.name}`}
         >
           <span
-            className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white dark:bg-gray-800 shadow ring-0 transition-transform duration-200 ${
-              checked ? 'translate-x-5' : 'translate-x-0'
+            className={`pointer-events-none inline-block h-5 w-5 ${
+              checked ? 'translate-x-5 bg-on-primary dark:bg-primary' : 'translate-x-0 bg-primary dark:bg-on-primary'
             }`}
           />
         </button>
-        <span className="text-sm text-gray-600 dark:text-gray-400">{checked ? 'True' : 'False'}</span>
+        <span className="text-sm text-on-surface-variant dark:text-on-surface-variant">{checked ? 'True' : 'False'}</span>
       </div>
     </FieldWrapper>
   );
@@ -348,10 +348,10 @@ function MultiSelectInput({
               key={v}
               type="button"
               onClick={() => toggle(v)}
-              className={`rounded-full border px-3 py-1 text-sm transition-colors ${
+              className={`border px-3 py-1 text-sm ${
                 isSelected
-                  ? 'border-blue-500 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-                  : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  ? 'border-primary dark:border-on-primary bg-primary dark:bg-on-primary text-on-primary dark:text-primary'
+                  : 'border-primary dark:border-on-primary bg-surface dark:bg-surface text-on-surface dark:text-on-surface hover:bg-surface-container-low dark:hover:bg-surface-container-low'
               }`}
               aria-pressed={isSelected}
               data-testid={`multiselect-option-${v}`}
@@ -362,7 +362,7 @@ function MultiSelectInput({
         })}
       </div>
       {options.maxSelect > 0 && (
-        <p className="text-xs text-gray-400 dark:text-gray-500">
+        <p className="text-xs text-secondary dark:text-secondary">
           {selected.length}/{options.maxSelect} selected
         </p>
       )}
@@ -561,7 +561,7 @@ function EditorInput({
         maxLength={options.maxLength > 0 ? options.maxLength : undefined}
         placeholder="Enter HTML content…"
       />
-      <p className="text-xs text-gray-400 dark:text-gray-500">
+      <p className="text-xs text-secondary dark:text-secondary">
         Supports HTML content
         {options.maxLength > 0 && ` · ${val.length}/${options.maxLength}`}
       </p>
@@ -573,7 +573,7 @@ function EditorInput({
 
 function AutoDateDisplay() {
   return (
-    <p className="text-xs italic text-gray-400 dark:text-gray-500" data-testid="autodate-notice">
+    <p className="text-xs italic text-on-surface-variant dark:text-on-surface-variant" data-testid="autodate-notice">
       Automatically managed by the server.
     </p>
   );

@@ -1161,7 +1161,7 @@ impl<R: RecordRepository, S: SchemaLookup> RecordService<R, S> {
                     for ref_record in &refs {
                         if let Some(ref_id) = ref_record.get("id").and_then(|v| v.as_str()) {
                             // Recursive delete to handle cascades of cascades.
-                            let _ = self.delete_record(ref_collection_name, ref_id);
+                            self.delete_record(ref_collection_name, ref_id)?;
                         }
                     }
                 }
@@ -1191,7 +1191,7 @@ impl<R: RecordRepository, S: SchemaLookup> RecordService<R, S> {
                             // replaces the entire row).
                             let mut update_data = ref_record.clone();
                             update_data.insert(ref_field_name.clone(), new_value);
-                            let _ = self.repo.update(ref_collection_name, ref_id, &update_data);
+                            self.repo.update(ref_collection_name, ref_id, &update_data)?;
                         }
                     }
                 }
@@ -3757,5 +3757,277 @@ mod tests {
             format!("{err}").contains("read-only"),
             "error should mention read-only: {err}"
         );
+    }
+
+    // ── Cascade error propagation tests ───────────────────────────────
+
+    /// Shared failure configuration for `FailingMockRecordRepo`.
+    ///
+    /// Held separately so tests can toggle failures after the repo
+    /// has been moved into a `RecordService`.
+    #[derive(Clone, Default)]
+    struct FailureConfig {
+        /// Collections for which `delete` should return an error.
+        fail_delete_on: std::sync::Arc<Mutex<std::collections::HashSet<String>>>,
+        /// Collections for which `update` should return an error.
+        fail_update_on: std::sync::Arc<Mutex<std::collections::HashSet<String>>>,
+    }
+
+    impl FailureConfig {
+        fn fail_delete_for(&self, collection: &str) {
+            self.fail_delete_on
+                .lock()
+                .unwrap()
+                .insert(collection.to_string());
+        }
+
+        fn fail_update_for(&self, collection: &str) {
+            self.fail_update_on
+                .lock()
+                .unwrap()
+                .insert(collection.to_string());
+        }
+    }
+
+    /// A record repo that delegates to `MockRecordRepo` but can inject
+    /// failures for specific operations on specific collections.
+    struct FailingMockRecordRepo {
+        inner: MockRecordRepo,
+        config: FailureConfig,
+    }
+
+    impl FailingMockRecordRepo {
+        fn new(config: FailureConfig) -> Self {
+            Self {
+                inner: MockRecordRepo::new(),
+                config,
+            }
+        }
+    }
+
+    impl RecordRepository for FailingMockRecordRepo {
+        fn find_one(
+            &self,
+            collection: &str,
+            id: &str,
+        ) -> std::result::Result<HashMap<String, Value>, RecordRepoError> {
+            self.inner.find_one(collection, id)
+        }
+
+        fn find_many(
+            &self,
+            collection: &str,
+            query: &RecordQuery,
+        ) -> std::result::Result<RecordList, RecordRepoError> {
+            self.inner.find_many(collection, query)
+        }
+
+        fn insert(
+            &self,
+            collection: &str,
+            data: &HashMap<String, Value>,
+        ) -> std::result::Result<(), RecordRepoError> {
+            self.inner.insert(collection, data)
+        }
+
+        fn update(
+            &self,
+            collection: &str,
+            id: &str,
+            data: &HashMap<String, Value>,
+        ) -> std::result::Result<bool, RecordRepoError> {
+            if self.config.fail_update_on.lock().unwrap().contains(collection) {
+                return Err(RecordRepoError::Database {
+                    message: format!("simulated update failure on {collection}"),
+                });
+            }
+            self.inner.update(collection, id, data)
+        }
+
+        fn delete(
+            &self,
+            collection: &str,
+            id: &str,
+        ) -> std::result::Result<bool, RecordRepoError> {
+            if self.config.fail_delete_on.lock().unwrap().contains(collection) {
+                return Err(RecordRepoError::Database {
+                    message: format!("simulated delete failure on {collection}"),
+                });
+            }
+            self.inner.delete(collection, id)
+        }
+
+        fn count(
+            &self,
+            collection: &str,
+            filter: Option<&str>,
+        ) -> std::result::Result<u64, RecordRepoError> {
+            self.inner.count(collection, filter)
+        }
+
+        fn find_referencing_records(
+            &self,
+            collection: &str,
+            field_name: &str,
+            referenced_id: &str,
+        ) -> std::result::Result<Vec<HashMap<String, Value>>, RecordRepoError> {
+            self.inner
+                .find_referencing_records(collection, field_name, referenced_id)
+        }
+    }
+
+    /// Build a service backed by `FailingMockRecordRepo` with authors → posts relation.
+    ///
+    /// Returns the `FailureConfig` handle so tests can toggle failures
+    /// after the repo has been moved into the service.
+    fn make_failing_relation_service(
+        on_delete: OnDeleteAction,
+    ) -> (
+        FailureConfig,
+        RecordService<FailingMockRecordRepo, MockSchema>,
+    ) {
+        let authors = Collection::base(
+            "authors",
+            vec![Field::new("name", FieldType::Text(TextOptions::default())).required(true)],
+        );
+        let posts = Collection::base(
+            "posts",
+            vec![
+                Field::new("title", FieldType::Text(TextOptions::default())).required(true),
+                Field::new(
+                    "author",
+                    FieldType::Relation(RelationOptions {
+                        collection_id: "authors".to_string(),
+                        max_select: 1,
+                        on_delete,
+                        ..Default::default()
+                    }),
+                ),
+            ],
+        );
+
+        let schema = multi_schema(vec![("authors", authors), ("posts", posts)]);
+        let config = FailureConfig::default();
+        let repo = FailingMockRecordRepo::new(config.clone());
+        let service = RecordService::new(repo, schema);
+        (config, service)
+    }
+
+    #[test]
+    fn cascade_delete_failure_propagates_error() {
+        let (config, service) = make_failing_relation_service(OnDeleteAction::Cascade);
+
+        // Create author and post.
+        let author = service
+            .create_record("authors", json!({"name": "Alice"}))
+            .unwrap();
+        let author_id = author["id"].as_str().unwrap().to_string();
+
+        let post = service
+            .create_record(
+                "posts",
+                json!({"title": "Post 1", "author": &author_id}),
+            )
+            .unwrap();
+        let post_id = post["id"].as_str().unwrap().to_string();
+
+        // Make delete fail on the "posts" collection (the cascade target).
+        config.fail_delete_for("posts");
+
+        // Attempt to delete the author — cascade should fail and propagate.
+        let err = service.delete_record("authors", &author_id).unwrap_err();
+        assert_eq!(err.status_code(), 500, "expected DB error (500), got: {err}");
+
+        // The author should still exist because the cascade failed before the
+        // parent delete could execute (process_on_delete_actions runs first).
+        assert!(
+            service.get_record("authors", &author_id).is_ok(),
+            "author should still exist after cascade failure"
+        );
+
+        // The post should also still exist (cascade delete failed).
+        assert!(
+            service.get_record("posts", &post_id).is_ok(),
+            "post should still exist after cascade delete failure"
+        );
+    }
+
+    #[test]
+    fn set_null_failure_propagates_error() {
+        let (config, service) = make_failing_relation_service(OnDeleteAction::SetNull);
+
+        // Create author and post.
+        let author = service
+            .create_record("authors", json!({"name": "Bob"}))
+            .unwrap();
+        let author_id = author["id"].as_str().unwrap().to_string();
+
+        let post = service
+            .create_record(
+                "posts",
+                json!({"title": "Post 1", "author": &author_id}),
+            )
+            .unwrap();
+        let post_id = post["id"].as_str().unwrap().to_string();
+
+        // Make update fail on the "posts" collection (the set-null target).
+        config.fail_update_for("posts");
+
+        // Attempt to delete the author — set-null should fail and propagate.
+        let err = service.delete_record("authors", &author_id).unwrap_err();
+        assert_eq!(err.status_code(), 500, "expected DB error (500), got: {err}");
+
+        // The author should still exist because process_on_delete_actions
+        // failed before repo.delete was called.
+        assert!(
+            service.get_record("authors", &author_id).is_ok(),
+            "author should still exist after set-null failure"
+        );
+
+        // The post should still have the original author reference.
+        let post_after = service.get_record("posts", &post_id).unwrap();
+        assert_eq!(
+            post_after["author"].as_str().unwrap(),
+            author_id,
+            "post author should be unchanged after set-null failure"
+        );
+    }
+
+    #[test]
+    fn cascade_delete_failure_does_not_leave_partial_state() {
+        let (config, service) = make_failing_relation_service(OnDeleteAction::Cascade);
+
+        // Create author and two posts.
+        let author = service
+            .create_record("authors", json!({"name": "Carol"}))
+            .unwrap();
+        let author_id = author["id"].as_str().unwrap().to_string();
+
+        let p1 = service
+            .create_record(
+                "posts",
+                json!({"title": "Post 1", "author": &author_id}),
+            )
+            .unwrap();
+        let p2 = service
+            .create_record(
+                "posts",
+                json!({"title": "Post 2", "author": &author_id}),
+            )
+            .unwrap();
+        let p1_id = p1["id"].as_str().unwrap().to_string();
+        let p2_id = p2["id"].as_str().unwrap().to_string();
+
+        // Fail delete on posts collection — the first cascade delete will fail.
+        config.fail_delete_for("posts");
+
+        // The parent delete should fail.
+        let err = service.delete_record("authors", &author_id).unwrap_err();
+        assert_eq!(err.status_code(), 500);
+
+        // All records should still exist (author + both posts).
+        assert!(service.get_record("authors", &author_id).is_ok());
+        assert!(service.get_record("posts", &p1_id).is_ok());
+        assert!(service.get_record("posts", &p2_id).is_ok());
     }
 }

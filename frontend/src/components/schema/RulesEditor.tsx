@@ -256,9 +256,10 @@ interface HighlightedRuleInputProps {
   onChange: (value: string) => void;
   error?: ValidationError | null;
   testId: string;
+  ariaLabel?: string;
 }
 
-function HighlightedRuleInput({ value, onChange, error, testId }: HighlightedRuleInputProps) {
+function HighlightedRuleInput({ value, onChange, error, testId, ariaLabel }: HighlightedRuleInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
 
@@ -273,7 +274,7 @@ function HighlightedRuleInput({ value, onChange, error, testId }: HighlightedRul
 
   return (
     <div className="relative">
-      <div className="relative overflow-hidden rounded-md border border-gray-300 dark:border-gray-600 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
+      <div className="relative overflow-hidden border border-primary focus-within:border-primary" style={{ borderWidth: '1px' }}>
         {/* Syntax highlight overlay */}
         <div
           ref={highlightRef}
@@ -290,14 +291,16 @@ function HighlightedRuleInput({ value, onChange, error, testId }: HighlightedRul
         {/* Actual textarea (transparent text, visible caret) */}
         <textarea
           ref={textareaRef}
+          id={testId}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onScroll={handleScroll}
-          className="relative w-full resize-none bg-transparent px-3 py-2 font-mono text-sm text-transparent caret-gray-900 dark:caret-gray-100 outline-none"
+          className="relative w-full resize-none bg-transparent px-3 py-2 font-mono text-sm text-transparent caret-on-surface outline-none"
           rows={1}
           spellCheck={false}
           autoComplete="off"
           data-testid={testId}
+          aria-label={ariaLabel}
           aria-invalid={error ? 'true' : undefined}
           aria-describedby={error ? `${testId}-error` : undefined}
         />
@@ -305,7 +308,7 @@ function HighlightedRuleInput({ value, onChange, error, testId }: HighlightedRul
       {error && (
         <p
           id={`${testId}-error`}
-          className="mt-1 text-xs text-red-600 dark:text-red-400"
+          className="mt-1 text-xs text-error"
           role="alert"
           data-testid={`${testId}-error`}
         >
@@ -377,38 +380,35 @@ function RulesHelperDocs({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 
   return (
     <div
-      className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 p-4"
+      className="border border-primary bg-surface-container-low p-4"
       data-testid="rules-helper-docs"
     >
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-200">Rule Expression Reference</h4>
+        <h4 className="text-label-md text-on-surface">Rule Expression Reference</h4>
         <button
           type="button"
           onClick={onClose}
-          className="rounded p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-800"
+          className="p-1 text-on-surface hover:bg-surface-container-high"
           aria-label="Close reference"
           data-testid="rules-helper-close"
         >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <span className="material-symbols-outlined text-base" aria-hidden="true">close</span>
         </button>
       </div>
 
       <div className="space-y-4">
         {HELPER_SECTIONS.map((section) => (
           <div key={section.title}>
-            <h5 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-blue-800 dark:text-blue-300">
+            <h5 className="text-label-sm text-secondary mb-1.5">
               {section.title}
             </h5>
             <div className="space-y-1">
               {section.items.map((item) => (
                 <div key={item.variable} className="flex gap-3 text-xs">
-                  <code className="shrink-0 rounded bg-blue-100 dark:bg-blue-900/20 px-1.5 py-0.5 font-mono text-blue-800 dark:text-blue-300">
+                  <code className="shrink-0 border border-outline-variant bg-surface-container px-1.5 py-0.5 font-mono text-on-surface">
                     {item.variable}
                   </code>
-                  <span className="text-blue-700 dark:text-blue-400">{item.description}</span>
+                  <span className="text-secondary">{item.description}</span>
                 </div>
               ))}
             </div>
@@ -416,12 +416,12 @@ function RulesHelperDocs({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
         ))}
       </div>
 
-      <div className="mt-4 rounded-md bg-blue-100 dark:bg-blue-900/20 p-3">
-        <h5 className="mb-1 text-xs font-semibold text-blue-900 dark:text-blue-200">Rule Values</h5>
-        <ul className="space-y-1 text-xs text-blue-700 dark:text-blue-400">
-          <li><strong>Locked (null)</strong> — Only superusers can perform this operation.</li>
-          <li><strong>Empty string</strong> — Open to everyone, no restrictions.</li>
-          <li><strong>Expression</strong> — Conditional access based on the request context.</li>
+      <div className="mt-4 border border-outline-variant bg-surface-container p-3">
+        <h5 className="text-label-sm text-on-surface mb-1">Rule Values</h5>
+        <ul className="space-y-1 text-xs text-secondary">
+          <li><strong className="text-on-surface">Locked (null)</strong> — Only superusers can perform this operation.</li>
+          <li><strong className="text-on-surface">Empty string</strong> — Open to everyone, no restrictions.</li>
+          <li><strong className="text-on-surface">Expression</strong> — Conditional access based on the request context.</li>
         </ul>
       </div>
     </div>
@@ -482,25 +482,20 @@ export function RulesEditor({ rules, onChange, collectionType }: RulesEditorProp
   const hasAnyError = Object.values(validationErrors).some((e) => e !== null);
 
   return (
-    <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6" data-testid="rules-editor">
+    <div data-testid="rules-editor">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">API Rules</h3>
-          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-secondary">
             Control who can access this collection&apos;s API endpoints.
           </p>
         </div>
         <button
           type="button"
           onClick={() => setShowHelperDocs((prev) => !prev)}
-          className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+          className="inline-flex items-center gap-1.5 border border-primary px-3 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface-container-low"
           data-testid="rules-helper-toggle"
         >
-          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-            <line x1="12" y1="17" x2="12.01" y2="17" />
-          </svg>
+          <span className="material-symbols-outlined text-sm" aria-hidden="true">help_outline</span>
           {showHelperDocs ? 'Hide Reference' : 'Show Reference'}
         </button>
       </div>
@@ -518,45 +513,37 @@ export function RulesEditor({ rules, onChange, collectionType }: RulesEditorProp
           return (
             <div
               key={fieldDef.key}
-              className="rounded-md border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3"
+              className="border border-outline-variant bg-surface-container-low p-3"
               data-testid={`rule-field-${fieldDef.key}`}
             >
               <div className="mb-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <label htmlFor={`rule-input-${fieldDef.key}`} className="text-sm font-semibold text-on-surface">
                     {fieldDef.label}
                   </label>
                   {isLocked ? (
                     <span
-                      className="inline-flex items-center gap-1 rounded-full bg-gray-200 dark:bg-gray-600 px-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-400"
+                      className="inline-flex items-center gap-1 border border-primary bg-primary text-on-primary px-2 py-0.5 text-label-sm"
                       data-testid={`rule-badge-${fieldDef.key}`}
                     >
-                      <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                        <path d="M7 11V7a5 5 0 0110 0v4" />
-                      </svg>
-                      Locked
+                      <span className="material-symbols-outlined text-xs" aria-hidden="true">lock</span>
+                      LOCKED
                     </span>
                   ) : ruleValue === '' ? (
                     <span
-                      className="inline-flex items-center gap-1 rounded-full bg-green-100 dark:bg-green-900/20 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400"
+                      className="inline-flex items-center gap-1 border border-primary px-2 py-0.5 text-label-sm text-on-surface"
                       data-testid={`rule-badge-${fieldDef.key}`}
                     >
-                      <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                        <path d="M7 11V7a5 5 0 019.9-1" />
-                      </svg>
-                      Public
+                      <span className="material-symbols-outlined text-xs" aria-hidden="true">lock_open</span>
+                      PUBLIC
                     </span>
                   ) : (
                     <span
-                      className="inline-flex items-center gap-1 rounded-full bg-blue-100 dark:bg-blue-900/20 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-400"
+                      className="inline-flex items-center gap-1 border border-outline px-2 py-0.5 text-label-sm text-secondary"
                       data-testid={`rule-badge-${fieldDef.key}`}
                     >
-                      <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                      </svg>
-                      Conditional
+                      <span className="material-symbols-outlined text-xs" aria-hidden="true">shield</span>
+                      CONDITIONAL
                     </span>
                   )}
                 </div>
@@ -565,7 +552,8 @@ export function RulesEditor({ rules, onChange, collectionType }: RulesEditorProp
                   {/* Preset dropdown */}
                   {!isLocked && (
                     <select
-                      className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1 text-xs text-gray-600 dark:text-gray-400 focus:border-blue-500 focus-visible:outline-none focus-visible:ring-1 focus:ring-blue-500"
+                      className="border border-primary bg-background px-2 py-1 text-xs text-on-surface focus:outline-none"
+                      aria-label={`Select preset rule for ${fieldDef.label}`}
                       value=""
                       onChange={(e) => {
                         const preset = RULE_PRESETS.find((p) =>
@@ -578,7 +566,7 @@ export function RulesEditor({ rules, onChange, collectionType }: RulesEditorProp
                       data-testid={`rule-preset-${fieldDef.key}`}
                     >
                       <option value="" disabled>
-                        Presets…
+                        Presets\u2026
                       </option>
                       {RULE_PRESETS.map((preset) => (
                         <option
@@ -595,35 +583,27 @@ export function RulesEditor({ rules, onChange, collectionType }: RulesEditorProp
                   <button
                     type="button"
                     onClick={() => handleToggleLock(fieldDef.key)}
-                    className={`rounded p-1.5 text-xs font-medium transition-colors ${
+                    className={`p-1.5 text-xs font-medium ${
                       isLocked
-                        ? 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-gray-700 dark:hover:text-gray-300'
-                        : 'text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-700 dark:hover:text-red-400'
+                        ? 'text-on-surface hover:bg-surface-container-high'
+                        : 'text-error hover:bg-error-container'
                     }`}
                     title={isLocked ? 'Unlock (allow access)' : 'Lock (superusers only)'}
                     data-testid={`rule-toggle-${fieldDef.key}`}
                     aria-label={isLocked ? `Unlock ${fieldDef.label}` : `Lock ${fieldDef.label}`}
                   >
-                    {isLocked ? (
-                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                        <path d="M7 11V7a5 5 0 019.9-1" />
-                      </svg>
-                    ) : (
-                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                        <path d="M7 11V7a5 5 0 0110 0v4" />
-                      </svg>
-                    )}
+                    <span className="material-symbols-outlined text-base" aria-hidden="true">
+                      {isLocked ? 'lock_open' : 'lock'}
+                    </span>
                   </button>
                 </div>
               </div>
 
-              <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">{fieldDef.description}</p>
+              <p className="mb-2 text-xs text-secondary">{fieldDef.description}</p>
 
               {isLocked ? (
                 <div
-                  className="rounded-md border border-dashed border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 px-3 py-2 text-center text-xs text-gray-400 dark:text-gray-500"
+                  className="border border-dashed border-outline bg-surface-container px-3 py-2 text-center text-xs text-secondary"
                   data-testid={`rule-locked-${fieldDef.key}`}
                 >
                   Only superusers can perform this operation. Click the unlock icon to set a rule.
@@ -634,6 +614,7 @@ export function RulesEditor({ rules, onChange, collectionType }: RulesEditorProp
                   onChange={(v) => handleRuleChange(fieldDef.key, v)}
                   error={error}
                   testId={`rule-input-${fieldDef.key}`}
+                  ariaLabel={`${fieldDef.label} expression`}
                 />
               )}
             </div>
@@ -644,28 +625,29 @@ export function RulesEditor({ rules, onChange, collectionType }: RulesEditorProp
       {/* Validation summary */}
       {hasAnyError && (
         <div
-          className="mt-4 rounded-md bg-yellow-50 dark:bg-yellow-900/30 p-3"
+          className="mt-4 border border-error bg-error-container p-3"
           role="alert"
           data-testid="rules-validation-summary"
         >
-          <p className="text-xs font-medium text-yellow-800 dark:text-yellow-300">
+          <p className="text-xs font-semibold text-on-error-container">
             Some rule expressions have syntax issues. Fix them before saving.
           </p>
         </div>
       )}
 
-      {/* Syntax highlight styles */}
+      {/* Syntax highlight styles — monolith palette */}
       <style>{`
-        .rule-macro { color: #7c3aed; font-weight: 500; }
-        .rule-operator { color: #dc2626; }
-        .rule-logical { color: #2563eb; font-weight: 600; }
-        .rule-string { color: #059669; }
-        .rule-number { color: #d97706; }
-        .rule-literal { color: #d97706; font-style: italic; }
-        .rule-field { color: #1e293b; }
-        .rule-paren { color: #6b7280; font-weight: 600; }
+        .rule-macro { color: var(--color-primary); font-weight: 600; }
+        .rule-operator { color: var(--color-error); }
+        .rule-logical { color: var(--color-secondary); font-weight: 700; }
+        .rule-string { color: var(--color-secondary); }
+        .dark .rule-string { color: var(--color-secondary); }
+        .rule-number { color: var(--color-secondary); }
+        .rule-literal { color: var(--color-secondary); font-style: italic; }
+        .rule-field { color: var(--color-on-surface); }
+        .rule-paren { color: var(--color-outline); font-weight: 700; }
       `}</style>
-    </section>
+    </div>
   );
 }
 

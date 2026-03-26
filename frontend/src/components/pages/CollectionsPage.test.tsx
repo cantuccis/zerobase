@@ -134,9 +134,9 @@ describe('CollectionsPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('Base')).toBeInTheDocument();
-      expect(screen.getByText('Auth')).toBeInTheDocument();
-      expect(screen.getByText('View')).toBeInTheDocument();
+      expect(screen.getByText('BASE')).toBeInTheDocument();
+      expect(screen.getByText('AUTH')).toBeInTheDocument();
+      expect(screen.getByText('VIEW')).toBeInTheDocument();
     });
   });
 
@@ -154,7 +154,7 @@ describe('CollectionsPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('3 of 3 collections')).toBeInTheDocument();
+      expect(screen.getByText('3 OF 3 COLLECTIONS')).toBeInTheDocument();
     });
   });
 
@@ -162,10 +162,10 @@ describe('CollectionsPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('Name')).toBeInTheDocument();
-      expect(screen.getByText('Type')).toBeInTheDocument();
-      expect(screen.getByText('Fields')).toBeInTheDocument();
-      expect(screen.getByText('Actions')).toBeInTheDocument();
+      expect(screen.getByText('NAME')).toBeInTheDocument();
+      expect(screen.getByText('TYPE')).toBeInTheDocument();
+      expect(screen.getByText('FIELDS')).toBeInTheDocument();
+      expect(screen.getByText('ACTIONS')).toBeInTheDocument();
     });
   });
 
@@ -203,7 +203,7 @@ describe('CollectionsPage', () => {
   it('renders New Collection button', async () => {
     renderPage();
 
-    const newBtn = screen.getByText('New Collection');
+    const newBtn = screen.getByText('NEW COLLECTION');
     expect(newBtn.closest('a')).toHaveAttribute('href', '/_/collections/new');
   });
 
@@ -214,7 +214,7 @@ describe('CollectionsPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('No collections')).toBeInTheDocument();
+      expect(screen.getByText('NO COLLECTIONS')).toBeInTheDocument();
       expect(screen.getByText('Get started by creating your first collection.')).toBeInTheDocument();
     });
   });
@@ -258,11 +258,11 @@ describe('CollectionsPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('Retry')).toBeInTheDocument();
+      expect(screen.getByText('RETRY')).toBeInTheDocument();
     });
 
     const user = userEvent.setup();
-    await user.click(screen.getByText('Retry'));
+    await user.click(screen.getByText('RETRY'));
 
     await waitFor(() => {
       expect(screen.getByText('posts')).toBeInTheDocument();
@@ -281,7 +281,7 @@ describe('CollectionsPage', () => {
       expect(screen.getByText('posts')).toBeInTheDocument();
     });
 
-    await user.type(screen.getByPlaceholderText('Search collections...'), 'users');
+    await user.type(screen.getByLabelText('SEARCH'), 'users');
 
     expect(screen.getByText('users')).toBeInTheDocument();
     expect(screen.queryByText('posts')).not.toBeInTheDocument();
@@ -296,7 +296,7 @@ describe('CollectionsPage', () => {
       expect(screen.getByText('posts')).toBeInTheDocument();
     });
 
-    await user.type(screen.getByPlaceholderText('Search collections...'), 'auth');
+    await user.type(screen.getByLabelText('SEARCH'), 'auth');
 
     expect(screen.getByText('users')).toBeInTheDocument();
     expect(screen.queryByText('posts')).not.toBeInTheDocument();
@@ -310,7 +310,7 @@ describe('CollectionsPage', () => {
       expect(screen.getByText('posts')).toBeInTheDocument();
     });
 
-    await user.type(screen.getByPlaceholderText('Search collections...'), 'POSTS');
+    await user.type(screen.getByLabelText('SEARCH'), 'POSTS');
 
     expect(screen.getByText('posts')).toBeInTheDocument();
   });
@@ -323,7 +323,7 @@ describe('CollectionsPage', () => {
       expect(screen.getByText('posts')).toBeInTheDocument();
     });
 
-    await user.type(screen.getByPlaceholderText('Search collections...'), 'nonexistent');
+    await user.type(screen.getByLabelText('SEARCH'), 'nonexistent');
 
     expect(screen.getByText('No collections match your search.')).toBeInTheDocument();
   });
@@ -336,10 +336,10 @@ describe('CollectionsPage', () => {
       expect(screen.getByText('posts')).toBeInTheDocument();
     });
 
-    await user.type(screen.getByPlaceholderText('Search collections...'), 'nonexistent');
+    await user.type(screen.getByLabelText('SEARCH'), 'nonexistent');
     expect(screen.getByText('No collections match your search.')).toBeInTheDocument();
 
-    await user.click(screen.getByText('Clear search'));
+    await user.click(screen.getByText('CLEAR SEARCH'));
 
     expect(screen.getByText('posts')).toBeInTheDocument();
     expect(screen.getByText('users')).toBeInTheDocument();
@@ -350,13 +350,13 @@ describe('CollectionsPage', () => {
     const user = userEvent.setup();
 
     await waitFor(() => {
-      expect(screen.getByText('3 of 3 collections')).toBeInTheDocument();
+      expect(screen.getByText('3 OF 3 COLLECTIONS')).toBeInTheDocument();
     });
 
-    await user.type(screen.getByPlaceholderText('Search collections...'), 'post');
+    await user.type(screen.getByLabelText('SEARCH'), 'post');
 
     // "posts" and "post_stats" match
-    expect(screen.getByText('2 of 3 collections')).toBeInTheDocument();
+    expect(screen.getByText('2 OF 3 COLLECTIONS')).toBeInTheDocument();
   });
 
   // ── Delete flow ──────────────────────────────────────────────────────────
@@ -371,7 +371,7 @@ describe('CollectionsPage', () => {
 
     await user.click(screen.getByLabelText('Delete posts'));
 
-    expect(screen.getByText('Delete Collection')).toBeInTheDocument();
+    expect(screen.getByText('DELETE COLLECTION')).toBeInTheDocument();
     expect(screen.getByText(/Are you sure you want to delete/)).toBeInTheDocument();
     expect(screen.getByText('posts', { selector: 'strong' })).toBeInTheDocument();
   });
@@ -385,10 +385,10 @@ describe('CollectionsPage', () => {
     });
 
     await user.click(screen.getByLabelText('Delete posts'));
-    expect(screen.getByText('Delete Collection')).toBeInTheDocument();
+    expect(screen.getByText('DELETE COLLECTION')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Cancel' }));
-    expect(screen.queryByText('Delete Collection')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'CANCEL' }));
+    expect(screen.queryByText('DELETE COLLECTION')).not.toBeInTheDocument();
   });
 
   it('deletes collection and removes from list on confirm', async () => {
@@ -415,7 +415,7 @@ describe('CollectionsPage', () => {
 
     await waitFor(() => {
       // Dialog should close and collection removed — only "posts" in table is gone
-      expect(screen.queryByText('Delete Collection')).not.toBeInTheDocument();
+      expect(screen.queryByText('DELETE COLLECTION')).not.toBeInTheDocument();
     });
 
     // Other collections still present
@@ -446,12 +446,12 @@ describe('CollectionsPage', () => {
 
     await user.click(screen.getByTestId('confirm-delete-btn'));
 
-    expect(screen.getByText('Deleting...')).toBeInTheDocument();
+    expect(screen.getByText(`DELETING\u2026`)).toBeInTheDocument();
 
     // Resolve to clean up
     resolveDelete();
     await waitFor(() => {
-      expect(screen.queryByText('Delete Collection')).not.toBeInTheDocument();
+      expect(screen.queryByText('DELETE COLLECTION')).not.toBeInTheDocument();
     });
   });
 
@@ -840,7 +840,7 @@ describe('CollectionsPage', () => {
   it('search input has accessible label', () => {
     renderPage();
 
-    const input = screen.getByPlaceholderText('Search collections...');
+    const input = screen.getByLabelText('SEARCH');
     expect(input).toHaveAttribute('id', 'collection-search');
     expect(input).toHaveAttribute('type', 'search');
   });
@@ -854,7 +854,7 @@ describe('CollectionsPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('1 of 1 collection')).toBeInTheDocument();
+      expect(screen.getByText('1 OF 1 COLLECTION')).toBeInTheDocument();
     });
   });
 });

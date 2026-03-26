@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;family=JetBrains+Mono&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-tertiary-fixed-variant": "#e2e2e2",
+              "on-primary-fixed-variant": "#e2e2e2",
+              "surface-container-highest": "#e2e2e2",
+              "error-container": "#ffdad6",
+              "tertiary-fixed-dim": "#474747",
+              "error": "#ba1a1a",
+              "surface-container": "#eeeeee",
+              "surface-container-high": "#e8e8e8",
+              "on-secondary-fixed": "#1b1b1b",
+              "surface-tint": "#5e5e5e",
+              "outline-variant": "#c6c6c6",
+              "on-tertiary": "#e2e2e2",
+              "inverse-surface": "#2f3131",
+              "on-secondary-container": "#1b1b1b",
+              "secondary-container": "#d4d4d4",
+              "tertiary": "#3b3b3b",
+              "on-tertiary-container": "#ffffff",
+              "surface": "#f9f9f9",
+              "inverse-primary": "#c6c6c6",
+              "tertiary-container": "#747474",
+              "on-surface-variant": "#474747",
+              "on-error": "#ffffff",
+              "on-tertiary-fixed": "#ffffff",
+              "on-error-container": "#410002",
+              "inverse-on-surface": "#f0f1f1",
+              "background": "#f9f9f9",
+              "on-secondary": "#ffffff",
+              "primary-container": "#3b3b3b",
+              "surface-container-lowest": "#ffffff",
+              "secondary-fixed": "#c6c6c6",
+              "secondary-fixed-dim": "#ababab",
+              "tertiary-fixed": "#5e5e5e",
+              "primary": "#000000",
+              "on-secondary-fixed-variant": "#3b3b3b",
+              "surface-container-low": "#f3f3f4",
+              "surface-bright": "#f9f9f9",
+              "primary-fixed-dim": "#474747",
+              "surface-variant": "#e2e2e2",
+              "on-primary": "#e2e2e2",
+              "secondary": "#5e5e5e",
+              "on-surface": "#1a1c1c",
+              "primary-fixed": "#5e5e5e",
+              "surface-dim": "#dadada",
+              "on-background": "#1a1c1c",
+              "on-primary-container": "#ffffff",
+              "outline": "#777777",
+              "on-primary-fixed": "#ffffff"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"],
+              "mono": ["JetBrains Mono"]
+            },
+            borderRadius: {"none": "0", "DEFAULT": "0", "lg": "0", "xl": "0", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        .no-shadows { box-shadow: none !important; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #ffffff; }
+        ::-webkit-scrollbar-thumb { background: #000000; }
+    </style>
+</head>
+<body class="bg-white text-black antialiased">
+<!-- SideNavBar (Shared Component) -->
+<aside class="fixed left-0 top-0 h-full w-64 border-r border-black bg-white flex flex-col py-8 font-inter antialiased tracking-tight">
+<div class="text-lg font-black tracking-tighter text-black mb-8 px-8">ADMIN <span class="text-[10px] font-normal tracking-widest block opacity-50">V1.0.4</span></div>
+<nav class="flex-1">
+<ul class="space-y-1">
+<li>
+<a class="flex items-center gap-3 text-gray-500 font-normal pl-5 py-3 hover:text-black transition-none" href="#">
+<span class="material-symbols-outlined text-[20px]">grid_view</span>
+<span class="text-sm">Dashboard</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-black font-bold border-l-4 border-black pl-4 py-3 transition-none" href="#">
+<span class="material-symbols-outlined text-[20px]">folder_open</span>
+<span class="text-sm">Collections</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-gray-500 font-normal pl-5 py-3 hover:text-black transition-none" href="#">
+<span class="material-symbols-outlined text-[20px]">insert_chart</span>
+<span class="text-sm">Analytics</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-gray-500 font-normal pl-5 py-3 hover:text-black transition-none" href="#">
+<span class="material-symbols-outlined text-[20px]">group</span>
+<span class="text-sm">Users</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 text-gray-500 font-normal pl-5 py-3 hover:text-black transition-none" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span class="text-sm">Settings</span>
+</a>
+</li>
+</ul>
+</nav>
+<div class="px-8 mt-auto pt-8 border-t border-gray-100">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-8 h-8 bg-black flex items-center justify-center text-white text-[10px] font-bold">JD</div>
+<div class="text-[10px] font-bold uppercase tracking-wider">John Doe</div>
+</div>
+<button class="text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-black transition-none">Logout</button>
+</div>
+</aside>
+<!-- TopNavBar (Shared Component) -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] border-b border-black bg-white flex justify-between items-center h-16 px-8 ml-64 z-10 font-inter text-sm font-semibold uppercase tracking-widest">
+<div class="flex items-center gap-4">
+<span class="text-black">Collections / Posts</span>
+<div class="relative ml-8 group">
+<span class="material-symbols-outlined absolute left-0 top-1/2 -translate-y-1/2 text-black text-lg">search</span>
+<input class="pl-7 bg-transparent border-none focus:ring-0 text-xs w-48 placeholder:text-gray-300" placeholder="Search records..." type="text"/>
+</div>
+</div>
+<button class="bg-black text-white px-6 py-2 text-[11px] font-bold uppercase tracking-widest hover:bg-gray-800 transition-none">
+            New record
+        </button>
+</header>
+<!-- Main Content Area -->
+<main class="ml-64 pt-16 min-h-screen bg-white">
+<div class="p-8 max-w-7xl mx-auto">
+<!-- Header Section -->
+<div class="mb-12">
+<div class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 mb-2">Collection Management</div>
+<h1 class="text-[3.5rem] font-extrabold leading-none tracking-tighter text-black mb-4">Posts</h1>
+<p class="text-gray-500 max-w-2xl leading-relaxed">Manage your application's content records. All changes are synced instantly to the live database via the PocketBase SDK.</p>
+</div>
+<!-- Bento Layout for Tools and Data -->
+<div class="grid grid-cols-12 gap-8">
+<!-- Table Section (Primary Column) -->
+<div class="col-span-12 lg:col-span-8">
+<div class="border border-black">
+<table class="w-full text-left border-collapse">
+<thead class="bg-white">
+<tr class="border-b border-black">
+<th class="p-4 text-[10px] font-bold uppercase tracking-widest">ID</th>
+<th class="p-4 text-[10px] font-bold uppercase tracking-widest">Title</th>
+<th class="p-4 text-[10px] font-bold uppercase tracking-widest">Description</th>
+<th class="p-4 text-[10px] font-bold uppercase tracking-widest">Status</th>
+<th class="p-4 text-[10px] font-bold uppercase tracking-widest text-right">Options</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-black">
+<tr class="hover:bg-gray-50 transition-none">
+<td class="p-4 font-mono text-[11px]">#rec_9a2f1</td>
+<td class="p-4 text-sm font-bold">The Future of Minimalist UI</td>
+<td class="p-4 text-sm text-gray-500 truncate max-w-[200px]">Exploring the shift from rounded bubbles to architectural...</td>
+<td class="p-4">
+<span class="inline-block w-2 h-2 bg-black mr-2"></span>
+<span class="text-[10px] font-bold uppercase">Active</span>
+</td>
+<td class="p-4 text-right space-x-4">
+<button class="text-[10px] font-bold uppercase tracking-widest hover:underline">Edit</button>
+<button class="text-[10px] font-bold uppercase tracking-widest text-error hover:underline">Delete</button>
+</td>
+</tr>
+<tr class="hover:bg-gray-50 transition-none">
+<td class="p-4 font-mono text-[11px]">#rec_4b8c3</td>
+<td class="p-4 text-sm font-bold">Technical Precision in Design</td>
+<td class="p-4 text-sm text-gray-500 truncate max-w-[200px]">How constraints drive creativity in brutalist systems...</td>
+<td class="p-4">
+<span class="inline-block w-2 h-2 bg-gray-200 mr-2"></span>
+<span class="text-[10px] font-bold uppercase text-gray-400">Draft</span>
+</td>
+<td class="p-4 text-right space-x-4">
+<button class="text-[10px] font-bold uppercase tracking-widest hover:underline">Edit</button>
+<button class="text-[10px] font-bold uppercase tracking-widest text-error hover:underline">Delete</button>
+</td>
+</tr>
+<tr class="hover:bg-gray-50 transition-none">
+<td class="p-4 font-mono text-[11px]">#rec_1e5d7</td>
+<td class="p-4 text-sm font-bold">Grid Systems Decoded</td>
+<td class="p-4 text-sm text-gray-500 truncate max-w-[200px]">Breaking down the 12-column logic for high-end web...</td>
+<td class="p-4">
+<span class="inline-block w-2 h-2 bg-black mr-2"></span>
+<span class="text-[10px] font-bold uppercase">Active</span>
+</td>
+<td class="p-4 text-right space-x-4">
+<button class="text-[10px] font-bold uppercase tracking-widest hover:underline">Edit</button>
+<button class="text-[10px] font-bold uppercase tracking-widest text-error hover:underline">Delete</button>
+</td>
+</tr>
+<tr class="hover:bg-gray-50 transition-none">
+<td class="p-4 font-mono text-[11px]">#rec_8f2a1</td>
+<td class="p-4 text-sm font-bold">The Zero-Radius Principle</td>
+<td class="p-4 text-sm text-gray-500 truncate max-w-[200px]">Why sharp corners evoke a sense of professional authority...</td>
+<td class="p-4">
+<span class="inline-block w-2 h-2 bg-black mr-2"></span>
+<span class="text-[10px] font-bold uppercase">Active</span>
+</td>
+<td class="p-4 text-right space-x-4">
+<button class="text-[10px] font-bold uppercase tracking-widest hover:underline">Edit</button>
+<button class="text-[10px] font-bold uppercase tracking-widest text-error hover:underline">Delete</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- API Preview & Stats Section (Side Column) -->
+<div class="col-span-12 lg:col-span-4 space-y-8">
+<!-- API Preview Area -->
+<div class="border border-black p-6 bg-white">
+<div class="text-[10px] font-bold uppercase tracking-widest mb-4 flex justify-between">
+<span>API Preview</span>
+<span class="text-gray-400">JSON / GET</span>
+</div>
+<div class="bg-[#F6F6F6] p-4 font-mono text-[11px] leading-relaxed border border-black overflow-x-auto">
+<pre class="whitespace-pre">{
+  "collection": "posts",
+  "action": "list",
+  "params": {
+    "page": 1,
+    "perPage": 30,
+    "filter": "status = 'active'"
+  }
+}
+</pre>
+</div>
+<button class="w-full mt-4 border border-black py-3 text-[10px] font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-none">Copy SDK Snippet</button>
+</div>
+<!-- Collection Stats -->
+<div class="border border-black bg-black text-white p-6">
+<div class="text-[10px] font-bold uppercase tracking-widest mb-6 opacity-60 text-white">Metrics Overview</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<div class="text-4xl font-extrabold tracking-tighter mb-1">42</div>
+<div class="text-[9px] font-bold uppercase tracking-widest opacity-60">Total Records</div>
+</div>
+<div>
+<div class="text-4xl font-extrabold tracking-tighter mb-1">12</div>
+<div class="text-[9px] font-bold uppercase tracking-widest opacity-60">Drafts</div>
+</div>
+</div>
+<div class="mt-8 pt-8 border-t border-white/20">
+<div class="text-[9px] font-bold uppercase tracking-widest mb-2 opacity-60">Last sync</div>
+<div class="text-sm font-bold">2 minutes ago</div>
+</div>
+</div>
+<!-- Technical Log Block -->
+<div class="border border-black p-6 bg-surface-container-low">
+<div class="text-[10px] font-bold uppercase tracking-widest mb-4">Latest Operations</div>
+<ul class="text-[11px] font-mono space-y-2 opacity-70">
+<li class="flex gap-2"><span>[14:22]</span> <span>POST update #rec_9a2f1</span></li>
+<li class="flex gap-2"><span>[13:05]</span> <span>GET list collections</span></li>
+<li class="flex gap-2"><span>[12:58]</span> <span>AUTH login admin@system</span></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Contextual FAB (Suppressed based on rules: Detail/Settings pages hide it, but this is a Dashboard so we keep it if relevant, however the design uses the TopNavBar primary action instead) -->
+</body></html>

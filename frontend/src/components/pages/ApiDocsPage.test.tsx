@@ -146,11 +146,11 @@ describe('ApiDocsPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('Retry')).toBeInTheDocument();
+      expect(screen.getByText('RETRY')).toBeInTheDocument();
     });
 
     const user = userEvent.setup();
-    await user.click(screen.getByText('Retry'));
+    await user.click(screen.getByText('RETRY'));
 
     await waitFor(() => {
       expect(screen.getByTestId('selected-collection-name')).toHaveTextContent('posts');
@@ -220,8 +220,8 @@ describe('ApiDocsPage', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('selected-collection-name')).toHaveTextContent('posts');
-      // "Base" appears in both the selector and the header badge — at least 2
-      expect(screen.getAllByText('Base').length).toBeGreaterThanOrEqual(2);
+      // "BASE" appears in both the selector and the header badge — at least 2
+      expect(screen.getAllByText('BASE').length).toBeGreaterThanOrEqual(2);
     });
   });
 
@@ -302,7 +302,7 @@ describe('ApiDocsPage', () => {
     await user.click(within(cards[0]).getByRole('button'));
 
     const details = within(cards[0]).getByTestId('endpoint-details');
-    expect(within(details).getByText('Response')).toBeInTheDocument();
+    expect(within(details).getByText('RESPONSE')).toBeInTheDocument();
     expect(within(details).getAllByTestId('code-block').length).toBeGreaterThanOrEqual(1);
   });
 
@@ -318,7 +318,7 @@ describe('ApiDocsPage', () => {
     await user.click(within(cards[0]).getByRole('button'));
 
     const details = within(cards[0]).getByTestId('endpoint-details');
-    expect(within(details).getByText('cURL Example')).toBeInTheDocument();
+    expect(within(details).getByText('CURL EXAMPLE')).toBeInTheDocument();
   });
 
   it('shows query parameters table for list endpoint', async () => {
@@ -334,7 +334,7 @@ describe('ApiDocsPage', () => {
     await user.click(within(cards[0]).getByRole('button'));
 
     const details = within(cards[0]).getByTestId('endpoint-details');
-    expect(within(details).getByText('Query Parameters')).toBeInTheDocument();
+    expect(within(details).getByText('QUERY PARAMETERS')).toBeInTheDocument();
     expect(within(details).getByText('page')).toBeInTheDocument();
     expect(within(details).getByText('perPage')).toBeInTheDocument();
   });
@@ -351,7 +351,7 @@ describe('ApiDocsPage', () => {
     await user.click(within(cards[0]).getByRole('button'));
 
     const details = within(cards[0]).getByTestId('endpoint-details');
-    expect(within(details).getByText('Access:')).toBeInTheDocument();
+    expect(within(details).getByText('ACCESS')).toBeInTheDocument();
     // Default rules are null = "Superusers only"
     expect(within(details).getByText('Superusers only')).toBeInTheDocument();
   });
@@ -461,7 +461,7 @@ describe('ApiDocsPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('API Documentation')).toBeInTheDocument();
+      expect(screen.getAllByText('API Documentation').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -471,7 +471,7 @@ describe('ApiDocsPage', () => {
     renderPage();
 
     await waitFor(() => {
-      const select = screen.getByLabelText('Collection');
+      const select = screen.getByLabelText('COLLECTION');
       expect(select).toBeInTheDocument();
       expect(select.tagName).toBe('SELECT');
     });

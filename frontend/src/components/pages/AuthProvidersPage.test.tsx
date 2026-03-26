@@ -114,10 +114,10 @@ describe('AuthProvidersPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('Google')).toBeInTheDocument();
+      expect(screen.getByTestId('provider-google')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Microsoft')).toBeInTheDocument();
+    expect(screen.getByTestId('provider-microsoft')).toBeInTheDocument();
   });
 
   it('shows Disabled status for both providers by default', async () => {
@@ -134,7 +134,7 @@ describe('AuthProvidersPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('Google')).toBeInTheDocument();
+      expect(screen.getByTestId('provider-google')).toBeInTheDocument();
     });
 
     expect(screen.queryByLabelText(/Client ID/)).not.toBeInTheDocument();
@@ -182,7 +182,7 @@ describe('AuthProvidersPage', () => {
 
     await user.click(screen.getByRole('switch', { name: /Enable Google/ }));
 
-    const redirectInput = screen.getByTestId('google-redirect-url');
+    const redirectInput = screen.getByLabelText(/Redirect URL/);
     expect(redirectInput).toHaveValue('http://localhost:8090/api/oauth2/redirect/google');
   });
 
@@ -193,7 +193,7 @@ describe('AuthProvidersPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByTestId('google-status')).toHaveTextContent('Enabled');
+      expect(screen.getByTestId('google-status')).toHaveTextContent('Active');
     });
 
     // Google is enabled and has client ID
@@ -215,12 +215,12 @@ describe('AuthProvidersPage', () => {
     });
   });
 
-  it('shows Enabled status when client ID is set and provider is enabled', async () => {
+  it('shows Active status when client ID is set and provider is enabled', async () => {
     mockGetSettings.mockResolvedValue(CONFIGURED_SETTINGS);
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByTestId('google-status')).toHaveTextContent('Enabled');
+      expect(screen.getByTestId('google-status')).toHaveTextContent('Active');
     });
   });
 
@@ -263,7 +263,7 @@ describe('AuthProvidersPage', () => {
     const user = userEvent.setup();
 
     await waitFor(() => {
-      expect(screen.getByText('Google')).toBeInTheDocument();
+      expect(screen.getByTestId('provider-google')).toBeInTheDocument();
     });
 
     // Both providers are disabled, save should succeed without validation errors
@@ -463,8 +463,9 @@ describe('AuthProvidersPage', () => {
     expect(screen.getByRole('switch', { name: /Enable Microsoft/ })).toHaveAttribute('aria-checked', 'true');
 
     // Both should show their redirect URLs
-    expect(screen.getByTestId('google-redirect-url')).toHaveValue('http://localhost:8090/api/oauth2/redirect/google');
-    expect(screen.getByTestId('microsoft-redirect-url')).toHaveValue('http://localhost:8090/api/oauth2/redirect/microsoft');
+    const redirectInputs = screen.getAllByLabelText(/Redirect URL/);
+    expect(redirectInputs[0]).toHaveValue('http://localhost:8090/api/oauth2/redirect/google');
+    expect(redirectInputs[1]).toHaveValue('http://localhost:8090/api/oauth2/redirect/microsoft');
   });
 
   it('validates all enabled providers on save', async () => {
@@ -493,7 +494,7 @@ describe('AuthProvidersPage', () => {
     const user = userEvent.setup();
 
     await waitFor(() => {
-      expect(screen.getByTestId('google-status')).toHaveTextContent('Enabled');
+      expect(screen.getByTestId('google-status')).toHaveTextContent('Active');
     });
 
     await user.click(screen.getByText('Save Providers'));

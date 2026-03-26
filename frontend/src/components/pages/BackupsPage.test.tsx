@@ -110,15 +110,15 @@ describe('BackupsPage', () => {
       expect(screen.getByTestId('backups-list')).toBeInTheDocument();
     });
 
-    // Check all backup names are displayed
-    expect(screen.getByText('backup_2026-03-21_120000.zip')).toBeInTheDocument();
-    expect(screen.getByText('backup_2026-03-20_080000.zip')).toBeInTheDocument();
-    expect(screen.getByText('backup_2026-03-19_150000.zip')).toBeInTheDocument();
+    // Check all backup names are displayed (mobile + desktop layouts render each name twice)
+    expect(screen.getAllByText('backup_2026-03-21_120000.zip').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('backup_2026-03-20_080000.zip').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('backup_2026-03-19_150000.zip').length).toBeGreaterThanOrEqual(1);
 
-    // Check sizes are formatted
-    expect(screen.getByText('2.0 MB')).toBeInTheDocument();
-    expect(screen.getByText('1.0 MB')).toBeInTheDocument();
-    expect(screen.getByText('512.0 KB')).toBeInTheDocument();
+    // Check sizes are formatted (may appear in both mobile + desktop layouts)
+    expect(screen.getAllByText('2.0 MB').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('1.0 MB').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('512.0 KB').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows backup count and total size', async () => {
@@ -157,7 +157,7 @@ describe('BackupsPage', () => {
       expect(screen.getByTestId('empty-state')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('No backups yet')).toBeInTheDocument();
+    expect(screen.getByText('No Backups Yet')).toBeInTheDocument();
     expect(screen.getByText('Create your first backup to protect your data.')).toBeInTheDocument();
     expect(screen.getByTestId('empty-create-btn')).toBeInTheDocument();
   });
@@ -493,7 +493,7 @@ describe('BackupsPage', () => {
       expect(screen.getByTestId('backups-header')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Create, download, and restore database backups.')).toBeInTheDocument();
+    expect(screen.getByText('DATABASE BACKUPS')).toBeInTheDocument();
     expect(screen.getByTestId('create-backup-btn')).toBeInTheDocument();
     expect(screen.getByTestId('create-backup-btn')).toHaveTextContent('Create Backup');
   });
@@ -507,12 +507,13 @@ describe('BackupsPage', () => {
       expect(screen.getByTestId('backups-list')).toBeInTheDocument();
     });
 
-    const rows = screen.getByTestId('backups-list').querySelectorAll('tbody tr');
-    expect(rows).toHaveLength(3);
+    // The redesigned component uses CSS grid rows instead of a table
+    const backupNames = screen.getByTestId('backups-list').querySelectorAll('[data-testid^="backup-row-"]');
+    expect(backupNames).toHaveLength(3);
 
-    // First row should be newest backup
-    expect(within(rows[0] as HTMLElement).getByText('backup_2026-03-21_120000.zip')).toBeInTheDocument();
-    expect(within(rows[2] as HTMLElement).getByText('backup_2026-03-19_150000.zip')).toBeInTheDocument();
+    // First row should be newest backup (getAllByText because mobile+desktop layouts both render the name)
+    expect(within(backupNames[0] as HTMLElement).getAllByText('backup_2026-03-21_120000.zip').length).toBeGreaterThanOrEqual(1);
+    expect(within(backupNames[2] as HTMLElement).getAllByText('backup_2026-03-19_150000.zip').length).toBeGreaterThanOrEqual(1);
   });
 
   // ── Success message auto-dismiss ───────────────────────────────────────

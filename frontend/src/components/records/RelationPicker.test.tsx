@@ -86,7 +86,7 @@ describe('RelationPicker', () => {
     it('applies error styling when hasError is true', () => {
       renderPicker({ hasError: true });
       const input = screen.getByTestId('relation-search-input-author');
-      expect(input.className).toContain('border-red-300');
+      expect(input.className).toContain('border-error');
     });
   });
 

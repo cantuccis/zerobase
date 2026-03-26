@@ -22,7 +22,7 @@ use tracing::warn;
 
 use zerobase_core::schema::rule_engine::{check_rule, evaluate_rule_str, RuleDecision};
 use zerobase_core::schema::FieldType;
-use zerobase_core::services::expand::{expand_record, expand_records, parse_expand};
+use zerobase_core::services::expand::{expand_record, expand_records, parse_expand, ExpandAuth};
 use zerobase_core::services::record_service::{
     RecordQuery, RecordRepository, RecordService, SchemaLookup, DEFAULT_PER_PAGE,
 };
@@ -436,12 +436,17 @@ pub async fn list_records<R: RecordRepository, S: SchemaLookup>(
         Ok(mut record_list) => {
             // Apply relation expansion if requested.
             if !expand_paths.is_empty() {
+                let expand_auth = ExpandAuth {
+                    is_superuser: auth.is_superuser,
+                    request_context: auth.to_simple_context("GET"),
+                };
                 if let Err(e) = expand_records(
                     &mut record_list.items,
                     &collection,
                     &expand_paths,
                     service.repo(),
                     service.schema(),
+                    &expand_auth,
                 ) {
                     return error_response(e);
                 }
@@ -522,6 +527,10 @@ pub async fn view_record<R: RecordRepository, S: SchemaLookup>(
 
     // Apply relation expansion if requested.
     if !expand_paths.is_empty() {
+        let expand_auth = ExpandAuth {
+            is_superuser: auth.is_superuser,
+            request_context: auth.to_simple_context("GET"),
+        };
         let mut visited = std::collections::HashSet::new();
         match expand_record(
             &record,
@@ -529,6 +538,7 @@ pub async fn view_record<R: RecordRepository, S: SchemaLookup>(
             &expand_paths,
             service.repo(),
             service.schema(),
+            &expand_auth,
             &mut visited,
             0,
         ) {

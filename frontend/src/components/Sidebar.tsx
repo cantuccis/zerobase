@@ -24,12 +24,12 @@ const NAV_ITEMS: NavItem[] = [
 // ── SVG Icons ────────────────────────────────────────────────────────────────
 
 function SidebarIcon({ name, className }: { name: SidebarIconName; className?: string }) {
-  const cls = className ?? 'h-5 w-5';
+  const cls = className ?? 'h-5 w-5 shrink-0';
   switch (name) {
     case 'overview':
       return (
         <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <rect x="3" y="3" width="18" height="18" rx="0" />
           <path d="M3 9h18" />
           <path d="M9 21V9" />
         </svg>
@@ -37,10 +37,10 @@ function SidebarIcon({ name, className }: { name: SidebarIconName; className?: s
     case 'collections':
       return (
         <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <rect x="3" y="3" width="7" height="7" rx="1" />
-          <rect x="14" y="3" width="7" height="7" rx="1" />
-          <rect x="3" y="14" width="7" height="7" rx="1" />
-          <rect x="14" y="14" width="7" height="7" rx="1" />
+          <rect x="3" y="3" width="7" height="7" rx="0" />
+          <rect x="14" y="3" width="7" height="7" rx="0" />
+          <rect x="3" y="14" width="7" height="7" rx="0" />
+          <rect x="14" y="14" width="7" height="7" rx="0" />
         </svg>
       );
     case 'api-docs':
@@ -92,6 +92,35 @@ function SidebarIcon({ name, className }: { name: SidebarIconName; className?: s
   }
 }
 
+// ── Shared nav list ──────────────────────────────────────────────────────────
+
+function NavList({ currentPath }: { currentPath: string }) {
+  return (
+    <ul role="list">
+      {NAV_ITEMS.map((item) => {
+        const active = isNavItemActive(item.href, currentPath);
+        return (
+          <li key={item.href}>
+            <a
+              href={item.href}
+              className={[
+                'flex items-center gap-3 px-8 py-3 text-label-md',
+                active
+                  ? 'border-l-4 border-primary bg-primary text-on-primary'
+                  : 'border-l-4 border-transparent text-outline hover:text-on-surface hover:bg-surface-container-low transition-colors-fast',
+              ].join(' ')}
+              aria-current={active ? 'page' : undefined}
+            >
+              <SidebarIcon name={item.icon} className="h-5 w-5 shrink-0" />
+              {item.label}
+            </a>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 // ── Sidebar ──────────────────────────────────────────────────────────────────
 
 export interface SidebarProps {
@@ -122,37 +151,17 @@ export function isNavItemActive(itemHref: string, currentPath: string): boolean 
 export function Sidebar({ currentPath }: SidebarProps) {
   return (
     <aside
-      className="hidden md:flex md:w-60 md:flex-col md:border-r md:border-gray-200 md:bg-white dark:md:border-gray-700 dark:md:bg-gray-800"
+      className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-primary bg-background md:flex"
       aria-label="Main navigation"
     >
-      <div className="flex h-14 items-center border-b border-gray-200 px-4 dark:border-gray-700">
-        <a href="/_/" className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Zerobase
+      <div className="flex h-16 items-center border-b border-primary px-8">
+        <a href="/_/" className="text-label-md text-primary tracking-widest">
+          ADMIN
         </a>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
-        <ul className="space-y-1" role="list">
-          {NAV_ITEMS.map((item) => {
-            const active = isNavItemActive(item.href, currentPath);
-            return (
-              <li key={item.href}>
-                <a
-                  href={item.href}
-                  className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                    active
-                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100'
-                  }`}
-                  aria-current={active ? 'page' : undefined}
-                >
-                  <SidebarIcon name={item.icon} />
-                  {item.label}
-                </a>
-              </li>
-            );
-          })}
-        </ul>
+      <nav className="flex-1 overflow-y-auto py-4">
+        <NavList currentPath={currentPath} />
       </nav>
     </aside>
   );
@@ -197,7 +206,7 @@ export function MobileSidebar({ currentPath }: SidebarProps) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="md:hidden rounded-md p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+        className="flex h-11 w-11 items-center justify-center text-primary hover:bg-surface-container-low md:hidden"
         aria-label="Open navigation menu"
       >
         <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -211,7 +220,7 @@ export function MobileSidebar({ currentPath }: SidebarProps) {
         <div className="fixed inset-0 z-50 md:hidden">
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/30"
+            className="fixed inset-0 bg-primary/50 animate-fade-in"
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
@@ -219,19 +228,19 @@ export function MobileSidebar({ currentPath }: SidebarProps) {
           {/* Drawer */}
           <aside
             ref={drawerRef}
-            className="fixed inset-y-0 left-0 w-64 bg-white shadow-xl dark:bg-gray-800"
+            className="fixed inset-y-0 left-0 w-64 border-r border-primary bg-background animate-slide-left-in"
             role="dialog"
             aria-modal="true"
             aria-label="Navigation menu"
           >
-            <div className="flex h-14 items-center justify-between border-b border-gray-200 px-4 dark:border-gray-700">
-              <a href="/_/" className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                Zerobase
+            <div className="flex h-16 items-center justify-between border-b border-primary px-8">
+              <a href="/_/" className="text-label-md text-primary tracking-widest">
+                ADMIN
               </a>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+                className="flex h-11 w-11 items-center justify-center text-primary hover:bg-surface-container-low"
                 aria-label="Close navigation menu"
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -241,28 +250,8 @@ export function MobileSidebar({ currentPath }: SidebarProps) {
               </button>
             </div>
 
-            <nav className="flex-1 overflow-y-auto px-3 py-4">
-              <ul className="space-y-1" role="list">
-                {NAV_ITEMS.map((item) => {
-                  const active = isNavItemActive(item.href, currentPath);
-                  return (
-                    <li key={item.href}>
-                      <a
-                        href={item.href}
-                        className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                          active
-                            ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100'
-                        }`}
-                        aria-current={active ? 'page' : undefined}
-                      >
-                        <SidebarIcon name={item.icon} />
-                        {item.label}
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
+            <nav className="flex-1 overflow-y-auto py-4">
+              <NavList currentPath={currentPath} />
             </nav>
           </aside>
         </div>

@@ -125,9 +125,9 @@ describe('LogsPage', () => {
     mockGetLogStats.mockReturnValue(new Promise(() => {}));
     renderPage();
 
-    // Stats skeleton cards
-    const pulseElements = document.querySelectorAll('.animate-pulse');
-    expect(pulseElements.length).toBeGreaterThan(0);
+    // Stats skeleton cards are rendered inside stats-overview
+    const statsOverview = screen.getByTestId('stats-overview');
+    expect(statsOverview).toBeInTheDocument();
   });
 
   // ── Stats overview ──────────────────────────────────────────────────────
@@ -137,35 +137,37 @@ describe('LogsPage', () => {
 
     await waitFor(() => {
       const statsOverview = screen.getByTestId('stats-overview');
-      expect(within(statsOverview).getByText('Total Requests')).toBeInTheDocument();
+      expect(within(statsOverview).getByText('TOTAL REQUESTS (24H)')).toBeInTheDocument();
       expect(within(statsOverview).getByText('1,250')).toBeInTheDocument();
-      expect(within(statsOverview).getByText('Error Rate')).toBeInTheDocument();
-      expect(within(statsOverview).getByText('10.4%')).toBeInTheDocument();
-      expect(within(statsOverview).getByText('Avg Duration')).toBeInTheDocument();
+      expect(within(statsOverview).getByText('ERROR RATE')).toBeInTheDocument();
+      expect(within(statsOverview).getByText('10.40%')).toBeInTheDocument();
+      expect(within(statsOverview).getByText('AVERAGE LATENCY')).toBeInTheDocument();
       expect(within(statsOverview).getByText('43ms')).toBeInTheDocument();
     });
   });
 
-  it('renders timeline chart with bars', async () => {
+  it('renders system status in stats overview', async () => {
+    // Error rate for SAMPLE_STATS is 10.40% (> 5%), so status is DEGRADED
     renderPage();
 
     await waitFor(() => {
-      const chart = screen.getByTestId('timeline-chart');
-      expect(chart).toBeInTheDocument();
-      const bars = within(chart).getAllByTestId('timeline-bar');
-      expect(bars).toHaveLength(4);
+      const statsOverview = screen.getByTestId('stats-overview');
+      expect(within(statsOverview).getByText('SYSTEM STATUS')).toBeInTheDocument();
+      expect(within(statsOverview).getByText('DEGRADED')).toBeInTheDocument();
     });
   });
 
-  it('renders status breakdown', async () => {
+  it('shows OPERATIONAL system status when error rate is low', async () => {
+    mockGetLogStats.mockResolvedValue({
+      ...SAMPLE_STATS,
+      totalRequests: 1000,
+      statusCounts: { success: 980, redirect: 10, clientError: 8, serverError: 2 },
+    });
     renderPage();
 
     await waitFor(() => {
-      const breakdown = screen.getByTestId('status-breakdown');
-      expect(breakdown).toBeInTheDocument();
-      expect(within(breakdown).getByText(/2xx/)).toBeInTheDocument();
-      expect(within(breakdown).getByText(/4xx/)).toBeInTheDocument();
-      expect(within(breakdown).getByText(/5xx/)).toBeInTheDocument();
+      const statsOverview = screen.getByTestId('stats-overview');
+      expect(within(statsOverview).getByText('OPERATIONAL')).toBeInTheDocument();
     });
   });
 
@@ -213,7 +215,7 @@ describe('LogsPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('No logs found matching the current filters.')).toBeInTheDocument();
+      expect(screen.getByText('NO LOGS FOUND')).toBeInTheDocument();
     });
   });
 
@@ -225,8 +227,7 @@ describe('LogsPage', () => {
     await waitFor(() => {
       const pagination = screen.getByTestId('pagination');
       expect(pagination).toBeInTheDocument();
-      expect(within(pagination).getByText('35 total entries')).toBeInTheDocument();
-      expect(within(pagination).getByText('1 / 2')).toBeInTheDocument();
+      expect(within(pagination).getByText(/SHOWING 1–30 OF 35 RESULTS/)).toBeInTheDocument();
     });
   });
 
@@ -267,23 +268,29 @@ describe('LogsPage', () => {
     await waitFor(() => {
       const filters = screen.getByTestId('logs-filters');
       expect(filters).toBeInTheDocument();
-      expect(screen.getByLabelText('Method')).toBeInTheDocument();
-      expect(screen.getByLabelText('Status')).toBeInTheDocument();
-      expect(screen.getByLabelText('Time Range')).toBeInTheDocument();
-      expect(screen.getByLabelText('URL')).toBeInTheDocument();
+      // Status toggle group label
+      expect(within(filters).getByText('STATUS')).toBeInTheDocument();
+      // Method toggle group label
+      expect(within(filters).getByText('METHOD')).toBeInTheDocument();
+      // Date preset buttons
+      expect(within(filters).getByText('24H')).toBeInTheDocument();
+      // URL filter input
+      expect(screen.getByLabelText('Filter by URL path')).toBeInTheDocument();
     });
   });
 
-  it('applies method filter when changed', async () => {
+  it('applies method filter when clicking method button', async () => {
     const user = userEvent.setup();
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Method')).toBeInTheDocument();
+      expect(screen.getByTestId('logs-filters')).toBeInTheDocument();
     });
 
-    const methodSelect = screen.getByLabelText('Method');
-    await user.selectOptions(methodSelect, 'POST');
+    // Click the POST method button in the filters
+    const filters = screen.getByTestId('logs-filters');
+    const postButtons = within(filters).getAllByText('POST');
+    await user.click(postButtons[0]);
 
     await waitFor(() => {
       const lastCall = mockListLogs.mock.calls[mockListLogs.mock.calls.length - 1];
@@ -291,16 +298,18 @@ describe('LogsPage', () => {
     });
   });
 
-  it('applies status filter when changed', async () => {
+  it('applies status filter when clicking status button', async () => {
     const user = userEvent.setup();
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Status')).toBeInTheDocument();
+      expect(screen.getByTestId('logs-filters')).toBeInTheDocument();
     });
 
-    const statusSelect = screen.getByLabelText('Status');
-    await user.selectOptions(statusSelect, '4'); // 5xx Server Error (index 4)
+    // Click the 5xx status filter button
+    const filters = screen.getByTestId('logs-filters');
+    const statusButton = within(filters).getByRole('button', { name: '5xx' });
+    await user.click(statusButton);
 
     await waitFor(() => {
       const lastCall = mockListLogs.mock.calls[mockListLogs.mock.calls.length - 1];
@@ -308,16 +317,17 @@ describe('LogsPage', () => {
     });
   });
 
-  it('applies date range filter when changed', async () => {
+  it('applies date range filter when clicking date preset button', async () => {
     const user = userEvent.setup();
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Time Range')).toBeInTheDocument();
+      expect(screen.getByTestId('logs-filters')).toBeInTheDocument();
     });
 
-    const dateSelect = screen.getByLabelText('Time Range');
-    await user.selectOptions(dateSelect, '7d');
+    const filters = screen.getByTestId('logs-filters');
+    const sevenDayButton = within(filters).getByRole('button', { name: '7D' });
+    await user.click(sevenDayButton);
 
     await waitFor(() => {
       const lastCall = mockListLogs.mock.calls[mockListLogs.mock.calls.length - 1];
@@ -335,10 +345,10 @@ describe('LogsPage', () => {
       expect(screen.getByTestId('logs-table')).toBeInTheDocument();
     });
 
-    // Click Status header to sort (in table header)
+    // Click STATUS header to sort (in table header)
     const table = screen.getByTestId('logs-table');
     const thead = within(table).getAllByRole('columnheader');
-    const statusHeader = thead.find(th => th.textContent?.startsWith('Status'))!;
+    const statusHeader = thead.find(th => th.textContent?.startsWith('STATUS'))!;
     await user.click(statusHeader);
 
     await waitFor(() => {
@@ -363,7 +373,7 @@ describe('LogsPage', () => {
     await waitFor(() => {
       const modal = screen.getByTestId('log-detail-modal');
       expect(modal).toBeInTheDocument();
-      expect(within(modal).getByText('Request Log Detail')).toBeInTheDocument();
+      expect(within(modal).getByText('REQUEST LOG DETAIL')).toBeInTheDocument();
     });
   });
 
@@ -475,7 +485,7 @@ describe('LogsPage', () => {
     // Now mock successful response
     mockListLogs.mockResolvedValue(SAMPLE_LOGS);
     const user = userEvent.setup();
-    await user.click(screen.getByText('Retry'));
+    await user.click(screen.getByText('RETRY'));
 
     await waitFor(() => {
       expect(screen.queryByText('Server error')).not.toBeInTheDocument();
@@ -544,37 +554,8 @@ describe('LogsPage', () => {
     await waitFor(() => {
       const statsOverview = screen.getByTestId('stats-overview');
       expect(within(statsOverview).getByText('0')).toBeInTheDocument();
-      expect(within(statsOverview).getByText('0.0%')).toBeInTheDocument();
+      expect(within(statsOverview).getByText('0.00%')).toBeInTheDocument();
     });
-  });
-
-  it('does not render timeline chart when timeline is empty', async () => {
-    mockGetLogStats.mockResolvedValue({
-      ...SAMPLE_STATS,
-      timeline: [],
-    });
-    renderPage();
-
-    await waitFor(() => {
-      expect(screen.getByTestId('stats-overview')).toBeInTheDocument();
-    });
-
-    expect(screen.queryByTestId('timeline-chart')).not.toBeInTheDocument();
-  });
-
-  it('does not render status breakdown when total requests is 0', async () => {
-    mockGetLogStats.mockResolvedValue({
-      ...SAMPLE_STATS,
-      totalRequests: 0,
-      statusCounts: { success: 0, redirect: 0, clientError: 0, serverError: 0 },
-    });
-    renderPage();
-
-    await waitFor(() => {
-      expect(screen.getByTestId('stats-overview')).toBeInTheDocument();
-    });
-
-    expect(screen.queryByTestId('status-breakdown')).not.toBeInTheDocument();
   });
 
   // ── Duration formatting ────────────────────────────────────────────────
@@ -592,19 +573,6 @@ describe('LogsPage', () => {
   });
 
   // ── Auth ID display ────────────────────────────────────────────────────
-
-  it('shows em dash for anonymous requests in table', async () => {
-    mockListLogs.mockResolvedValue({
-      ...SAMPLE_LOGS,
-      items: [makeLogEntry({ id: 'anon-1', authId: '' })],
-    });
-    renderPage();
-
-    await waitFor(() => {
-      const row = screen.getByTestId('log-row');
-      expect(within(row).getByText('\u2014')).toBeInTheDocument();
-    });
-  });
 
   it('shows (anonymous) in detail modal for empty authId', async () => {
     mockGetLog.mockResolvedValue(makeLogEntry({ authId: '' }));

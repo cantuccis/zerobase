@@ -27,7 +27,7 @@ impl RecordRepository for Database {
 
         let sql = format!(
             "SELECT * FROM \"{}\" WHERE id = ?1",
-            sanitize_table_name(collection)
+            sanitize_table_name(collection)?
         );
 
         let mut stmt = conn.prepare(&sql).map_err(sqlite_err_to_repo)?;
@@ -58,7 +58,7 @@ impl RecordRepository for Database {
     ) -> std::result::Result<RecordList, RecordRepoError> {
         let conn = self.read_conn().map_err(db_err_to_repo)?;
 
-        let table = sanitize_table_name(collection);
+        let table = sanitize_table_name(collection)?;
         let page = query.page.max(1);
         let per_page = query.per_page.max(1).min(500);
 
@@ -185,7 +185,7 @@ impl RecordRepository for Database {
         collection: &str,
         data: &HashMap<String, JsonValue>,
     ) -> std::result::Result<(), RecordRepoError> {
-        let table = sanitize_table_name(collection);
+        let table = sanitize_table_name(collection)?;
 
         self.with_write_conn(|conn| {
             let mut columns: Vec<String> = Vec::new();
@@ -219,7 +219,7 @@ impl RecordRepository for Database {
         id: &str,
         data: &HashMap<String, JsonValue>,
     ) -> std::result::Result<bool, RecordRepoError> {
-        let table = sanitize_table_name(collection);
+        let table = sanitize_table_name(collection)?;
 
         self.with_write_conn(|conn| {
             let mut set_parts: Vec<String> = Vec::new();
@@ -257,7 +257,7 @@ impl RecordRepository for Database {
     }
 
     fn delete(&self, collection: &str, id: &str) -> std::result::Result<bool, RecordRepoError> {
-        let table = sanitize_table_name(collection);
+        let table = sanitize_table_name(collection)?;
 
         self.with_write_conn(|conn| {
             let sql = format!("DELETE FROM \"{}\" WHERE id = ?1", table);
@@ -276,7 +276,7 @@ impl RecordRepository for Database {
     ) -> std::result::Result<u64, RecordRepoError> {
         let conn = self.read_conn().map_err(db_err_to_repo)?;
 
-        let table = sanitize_table_name(collection);
+        let table = sanitize_table_name(collection)?;
 
         let filter_result = match filter_str {
             Some(f) => {
@@ -309,8 +309,8 @@ impl RecordRepository for Database {
         referenced_id: &str,
     ) -> std::result::Result<Vec<HashMap<String, JsonValue>>, RecordRepoError> {
         let conn = self.read_conn().map_err(db_err_to_repo)?;
-        let table = sanitize_table_name(collection);
-        let col = sanitize_table_name(field_name);
+        let table = sanitize_table_name(collection)?;
+        let col = sanitize_table_name(field_name)?;
 
         // For relation fields, the value is stored as either:
         // - A plain string ID (single relation)
@@ -354,8 +354,8 @@ impl RecordRepository for Database {
         limit: usize,
     ) -> std::result::Result<Vec<HashMap<String, JsonValue>>, RecordRepoError> {
         let conn = self.read_conn().map_err(db_err_to_repo)?;
-        let table = sanitize_table_name(collection);
-        let col = sanitize_table_name(field_name);
+        let table = sanitize_table_name(collection)?;
+        let col = sanitize_table_name(field_name)?;
 
         // Same logic as find_referencing_records but with SQL LIMIT for efficiency.
         let sql = format!(
@@ -416,25 +416,26 @@ fn sqlite_err_to_repo(err: rusqlite::Error) -> RecordRepoError {
 /// could break out of a double-quoted identifier — specifically double quotes,
 /// semicolons, null bytes, and backslashes.
 ///
-/// # Panics
-///
-/// Panics if the name contains forbidden characters. This should never happen
-/// in practice because collection names are validated at the schema layer.
-fn sanitize_table_name(name: &str) -> &str {
-    assert!(
-        !name.is_empty(),
-        "BUG: table name must not be empty"
-    );
-    assert!(
-        !name.contains('"')
-            && !name.contains(';')
-            && !name.contains('\0')
-            && !name.contains('\\')
-            && !name.contains('\n')
-            && !name.contains('\r'),
-        "BUG: table name contains forbidden character: {name:?}"
-    );
-    name
+/// Returns an error instead of panicking so that a single malformed name
+/// cannot crash the entire server.
+fn sanitize_table_name(name: &str) -> std::result::Result<&str, RecordRepoError> {
+    if name.is_empty() {
+        return Err(RecordRepoError::Database {
+            message: "table name must not be empty".to_string(),
+        });
+    }
+    if name.contains('"')
+        || name.contains(';')
+        || name.contains('\0')
+        || name.contains('\\')
+        || name.contains('\n')
+        || name.contains('\r')
+    {
+        return Err(RecordRepoError::Database {
+            message: format!("table name contains forbidden character: {name:?}"),
+        });
+    }
+    Ok(name)
 }
 
 /// Convert a SQLite row value at the given index to a JSON value.
@@ -1655,44 +1656,55 @@ mod tests {
 
     #[test]
     fn sanitize_table_name_accepts_valid_names() {
-        assert_eq!(sanitize_table_name("posts"), "posts");
-        assert_eq!(sanitize_table_name("user_profiles"), "user_profiles");
-        assert_eq!(sanitize_table_name("_superusers"), "_superusers");
+        assert_eq!(sanitize_table_name("posts").unwrap(), "posts");
+        assert_eq!(sanitize_table_name("user_profiles").unwrap(), "user_profiles");
+        assert_eq!(sanitize_table_name("_superusers").unwrap(), "_superusers");
     }
 
     #[test]
-    #[should_panic(expected = "BUG: table name must not be empty")]
     fn sanitize_table_name_rejects_empty() {
-        sanitize_table_name("");
+        let err = sanitize_table_name("").unwrap_err();
+        match err {
+            RecordRepoError::Database { message } => {
+                assert!(message.contains("empty"), "expected 'empty' in: {message}");
+            }
+            other => panic!("expected Database error, got: {other:?}"),
+        }
     }
 
     #[test]
-    #[should_panic(expected = "BUG: table name contains forbidden character")]
     fn sanitize_table_name_rejects_double_quote() {
-        sanitize_table_name("posts\"--");
+        let err = sanitize_table_name("posts\"--").unwrap_err();
+        assert!(matches!(err, RecordRepoError::Database { .. }));
     }
 
     #[test]
-    #[should_panic(expected = "BUG: table name contains forbidden character")]
     fn sanitize_table_name_rejects_semicolon() {
-        sanitize_table_name("posts; DROP TABLE users");
+        let err = sanitize_table_name("posts; DROP TABLE users").unwrap_err();
+        assert!(matches!(err, RecordRepoError::Database { .. }));
     }
 
     #[test]
-    #[should_panic(expected = "BUG: table name contains forbidden character")]
     fn sanitize_table_name_rejects_null_byte() {
-        sanitize_table_name("posts\0");
+        let err = sanitize_table_name("posts\0").unwrap_err();
+        assert!(matches!(err, RecordRepoError::Database { .. }));
     }
 
     #[test]
-    #[should_panic(expected = "BUG: table name contains forbidden character")]
     fn sanitize_table_name_rejects_backslash() {
-        sanitize_table_name("posts\\evil");
+        let err = sanitize_table_name("posts\\evil").unwrap_err();
+        assert!(matches!(err, RecordRepoError::Database { .. }));
     }
 
     #[test]
-    #[should_panic(expected = "BUG: table name contains forbidden character")]
     fn sanitize_table_name_rejects_newline() {
-        sanitize_table_name("posts\nnewline");
+        let err = sanitize_table_name("posts\nnewline").unwrap_err();
+        assert!(matches!(err, RecordRepoError::Database { .. }));
+    }
+
+    #[test]
+    fn sanitize_table_name_rejects_carriage_return() {
+        let err = sanitize_table_name("posts\revil").unwrap_err();
+        assert!(matches!(err, RecordRepoError::Database { .. }));
     }
 }
